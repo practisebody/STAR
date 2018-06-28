@@ -2,6 +2,7 @@
 using SimpleJSON;
 using System;
 using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 
 namespace STAR
@@ -9,7 +10,6 @@ namespace STAR
     public class PolylineAnnotation : Annotation
     {
         public List<Vector2> Positions { get; set; }
-        //public List<Stablizer<Vector3>> Positions3 { get; set; }
 
         public PolylineAnnotation(JSONNode node)
         {
@@ -23,14 +23,17 @@ namespace STAR
 
         public override string ToString()
         {
-            string result = "";
-            for (int i = 0; i < Positions.Count; ++i)
+            StringBuilder sb = new StringBuilder(100);
+            int len = Positions.Count;
+            for (int i = 0; i < Math.Min(4, len); ++i)
             {
-                result += "(" + Positions[i].x.ToString(Utilities.FloatFormat) + "," + Positions[i].y.ToString(Utilities.FloatFormat) + ") ";
-                if (i % 10 == 9 && i != Positions.Count - 1)
-                    result += "\n";
+                sb.Append("(").Append(Positions[i].x.ToString(Utilities.FloatFormat)).Append(",").Append(Positions[i].y.ToString(Utilities.FloatFormat)).Append("),");
             }
-            return result;
+            if (len > 5)
+                sb.Append("...");
+            if (len > 0)
+                sb.Append("(").Append(Positions[len - 1].x.ToString(Utilities.FloatFormat)).Append(",").Append(Positions[len - 1].y.ToString(Utilities.FloatFormat)).Append(")");
+            return sb.ToString();
         }
     }
 }

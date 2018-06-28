@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2017
+# Visual Studio 15
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "STAR", "STAR.csproj", "{E2AD8711-DD1A-F929-B6FE-35338F90B7D7}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "STAR.Editor", "STAR.Editor.csproj", "{BA4F2BB6-0CF0-4B59-A6C4-35164DEC50B0}"

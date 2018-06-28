@@ -15,7 +15,6 @@ namespace LCY
         private event OnVideoCaptureResourceCreatedCallback VideoCaptureCreated;
         private OnVideoModeStartedCallback VideoModeStartedCallback;
         private OnVideoModeStoppedCallback VideoModeStoppedCallback;
-        private Task SlowCallbackTask { get; set; }
 
         private static UVideoCapture instance = new UVideoCapture();
         public static UVideoCapture Instance => instance;
@@ -31,7 +30,7 @@ namespace LCY
 
         private UVideoCapture()
         {
-            //VideoCapture.CreateAync(OnVideoCaptureInstanceCreated);
+            VideoCapture.CreateAync(OnVideoCaptureInstanceCreated);
         }
 
         public void SetNativeISpatialCoordinateSystemPtr(IntPtr ptr)
@@ -74,7 +73,7 @@ namespace LCY
             return VideoCapture?.GetSupportedFrameRatesForResolution(forResolution).OrderBy(r => r).FirstOrDefault() ?? default(float);
         }
 
-        public void StartCamera(OnVideoModeStartedCallback videoStart = null, Mode mode = Mode.LISTENER)
+        public void StartCamera(Mode mode = Mode.LISTENER, OnVideoModeStartedCallback videoStart = null)
         {
             VideoModeStartedCallback = videoStart;
             VideoMode = mode;

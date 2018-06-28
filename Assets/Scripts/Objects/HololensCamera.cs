@@ -1,4 +1,5 @@
-﻿using HoloToolkit.Unity.SpatialMapping;
+﻿using HoloToolkit.Unity;
+using HoloToolkit.Unity.SpatialMapping;
 using LCY;
 using System;
 using System.Collections;
@@ -7,8 +8,8 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using UnityEngine;
-using UnityEngine.VR.WSA;
-using UnityEngine.VR.WSA.WebCam;
+using UnityEngine.XR.WSA;
+using UnityEngine.XR.WSA.WebCam;
 
 namespace STAR
 {
@@ -61,56 +62,35 @@ namespace STAR
         public Transform HololensCameras;
         public Transform HololensCameraRays;
         public Transform CheckerPointsObject;
-        
+
         protected GameObject GizmoPrefab;
         protected GameObject CheckerPointPrefab;
 
-        protected bool ShowHololensCamera { get; set; }
-        protected int ShowCameraNumber { get; set; }
-
-        public VideoPreview VideoPreview;
-        volatile PhotoCapture photoCaptureObject = null;
-        Resolution cameraResolution;
-        protected byte[] LatestImageBytes;
-        protected bool SaveImage { get; set; }
-
-        protected string OutputDirectory { get; } = DateTime.Now.ToString("yyMMddhhmmss");
-        protected int Counter { get; set; } = 0;
-
-        //protected List<SE3> checkerToWorldMatrices = new List<SE3>();
         public SE3 CheckerToLocalMatrix
         {
             set
             {
-                Checkerboard.LocalToWorldMatrix = LocalToWorldMatrix * value;
+                Checkerboard.localToWorldMatrix = localToWorldMatrix * value;
             }
         }
 
         protected Matrix4x4 CameraToWorldMatrix;
         protected Matrix4x4 ProjectionMatrix;
 
-        // TODO(chengyuanlin)
-        // where to put? checker or hololens
         public List<Vector2> CheckerPoints
         {
             set
             {
-                Vector3 origin = LocalToWorldMatrix.Translation;
-                Quaternion rotation = LocalToWorldMatrix.Rotation;
-                if (ShowHololensCamera)
-                {
-                    Instantiate(GizmoPrefab, origin, rotation, HololensCameras);
-                }
+                Vector3 origin = localToWorldMatrix.Translation;
+                Quaternion rotation = localToWorldMatrix.Rotation;
+                Instantiate(GizmoPrefab, origin, rotation, HololensCameras);
                 foreach (Vector2 p in value)
                 {
                     Vector3 direction;
-                    Utilities.PixelCoordToWorldCoord(CameraToWorldMatrix, ProjectionMatrix, cameraResolution, new Vector2(p.x, cameraResolution.height - p.y), out direction);
+                    Utilities.PixelCoordToWorldCoord(CameraToWorldMatrix, ProjectionMatrix, CameraResolution, new Vector2(p.x, CameraResolution.height - p.y), out direction);
                     RaycastHit hitInfo;
                     Physics.Raycast(origin, direction, out hitInfo, 300.0f, SpatialMappingManager.Instance.LayerMask);
-                    if (ShowHololensCamera)
-                    {
-                        ObjectFactory.NewRay(HololensCameraRays, origin, hitInfo.point);
-                    }
+                    ObjectFactory.NewRay(HololensCameraRays, origin, hitInfo.point);
                 }
             }
         }
@@ -126,41 +106,53 @@ namespace STAR
 
         private void Start()
         {
-            PhotoCapture.CreateAsync(false, OnPhotoCaptureCreated);
-
-            Configurations.Instance.SetAndAddCallback("ShowHololensCamera", false, v => transform.parent.gameObject.SetActive(ShowHololensCamera = v), Configurations.CallNow.YES, Configurations.RunOnMainThead.YES);
-            Configurations.Instance.SetAndAddCallback("TakePicture", false, v => photoCaptureObject.TakePhotoAsync(OnCapturedPhotoToMemory), Configurations.RunOnMainThead.YES, Configurations.WaitUntilDone.YES);
-
             GizmoPrefab = Resources.Load<GameObject>("Gizmo");
             CheckerPointPrefab = Resources.Load<GameObject>("CheckerPoint");
 
-            Utilities.CreateFolder(OutputDirectory);
+            //PhotoStart();
+            //VideoStart();
+        }
+
+        #region photo
+
+        protected PhotoCapture PhotoCaptureObject = null;
+        public VideoPreview VideoPreview;
+        protected CameraParameters Parameters;
+        protected Resolution CameraResolution;
+        protected byte[] LatestImageBytes;
+
+        protected void PhotoStart()
+        {
+            PhotoCapture.CreateAsync(false, OnPhotoCaptureCreated);
+
+            Configurations.Instance.SetAndAddCallback("Visual_HololensCamera", false, v => transform.parent.gameObject.SetActive(v), Configurations.CallNow.YES, Configurations.RunOnMainThead.YES);
+            Configurations.Instance.AddCallback("TakePicture", () => PhotoCaptureObject.StartPhotoModeAsync(Parameters, OnPhotoModeStarted), Configurations.RunOnMainThead.YES, Configurations.WaitUntilDone.NO);
         }
 
         protected void OnPhotoCaptureCreated(PhotoCapture captureObject)
         {
-            photoCaptureObject = captureObject;
+            PhotoCaptureObject = captureObject;
 
-            cameraResolution = PhotoCapture.SupportedResolutions.OrderByDescending((res) => res.width * res.height).First();
+            CameraResolution = PhotoCapture.SupportedResolutions.OrderByDescending((res) => res.width * res.height).First();
 
-            CameraParameters c = new CameraParameters
+            Parameters = new CameraParameters
             {
                 hologramOpacity = 0.0f,
-                cameraResolutionWidth = cameraResolution.width,
-                cameraResolutionHeight = cameraResolution.height,
+                cameraResolutionWidth = CameraResolution.width,
+                cameraResolutionHeight = CameraResolution.height,
                 pixelFormat = CapturePixelFormat.BGRA32,
             };
 
-            initChessPoseController();
-            setImageSize(cameraResolution.height, cameraResolution.width);
-            VideoPreview.SetResolution(cameraResolution.width, cameraResolution.height);
+            Debug.Log("Res:" + CameraResolution.width + "," + CameraResolution.height);
 
-            captureObject.StartPhotoModeAsync(c, OnPhotoModeStarted);
+            initChessPoseController();
+            setImageSize(CameraResolution.height, CameraResolution.width);
+            VideoPreview.SetResolution(CameraResolution.width, CameraResolution.height);
         }
 
         protected void OnPhotoModeStarted(PhotoCapture.PhotoCaptureResult result)
         {
-            //photoCaptureObject.TakePhotoAsync(OnCapturedPhotoToMemory);
+            PhotoCaptureObject.TakePhotoAsync(OnCapturedPhotoToMemory);
         }
 
         protected void OnCapturedPhotoToMemory(PhotoCapture.PhotoCaptureResult result, PhotoCaptureFrame photoCaptureFrame)
@@ -168,10 +160,10 @@ namespace STAR
             List<byte> imageBufferList = new List<byte>();
             photoCaptureFrame.CopyRawImageDataIntoBuffer(imageBufferList);
             LatestImageBytes = imageBufferList.ToArray();
-            Utilities.Flip(LatestImageBytes, cameraResolution.width, cameraResolution.height, 0);
+            Utilities.Flip(LatestImageBytes, CameraResolution.width, CameraResolution.height, 0);
             try
             {
-                if (TopDownCamera.IntrinsicValid == false)
+                if (Checkerboard.valid == false)
                 {
                     throw new Exception();
                 }
@@ -190,8 +182,8 @@ namespace STAR
                 IntPtr imageHandle = Marshal.AllocHGlobal(LatestImageBytes.Length);
                 Marshal.Copy(LatestImageBytes, 0, imageHandle, LatestImageBytes.Length);
                 newImage(imageHandle);
-                float halfWidth = cameraResolution.width / 2f;
-                float halfHeight = cameraResolution.height / 2f;
+                float halfWidth = CameraResolution.width / 2f;
+                float halfHeight = CameraResolution.height / 2f;
                 Fx = ProjectionMatrix.GetColumn(0).x * halfWidth;
                 Fy = ProjectionMatrix.GetColumn(1).y * halfHeight;
                 float offsetX = ProjectionMatrix.GetColumn(2).x;
@@ -199,12 +191,12 @@ namespace STAR
                 Cx = halfWidth + offsetX * halfWidth;
                 Cy = halfHeight + offsetY * halfHeight;
                 IntrinsicValid = true;
-                bool gotValidPose = findExtrinsics(Checkerboard.X, Checkerboard.Y, Checkerboard.Size, Fx, Fy, Cx, Cy, K1, K2, K3, P1, P2);
+                bool gotValidPose = findExtrinsics(Checkerboard.x, Checkerboard.y, Checkerboard.size, Fx, Fy, Cx, Cy, K1, K2, K3, P1, P2);
                 if (gotValidPose)
                 {
-                    LocalToWorldMatrix = SE3.ConvertLeftHandedMatrix4x4ToSE3(CameraToWorldMatrix);
+                    localToWorldMatrix = SE3.ConvertLeftHandedMatrix4x4ToSE3(CameraToWorldMatrix);
                     List<Vector2> checker = new List<Vector2>();
-                    for (int i = 0; i < Checkerboard.X * Checkerboard.Y; ++i)
+                    for (int i = 0; i < Checkerboard.x * Checkerboard.y; ++i)
                     {
                         float x = getCheckerPoints(i, 0);
                         float y = getCheckerPoints(i, 1);
@@ -221,20 +213,105 @@ namespace STAR
 
                 // Fetch the processed image and render
                 imageHandle = getProcessedImage();
-                Marshal.Copy(imageHandle, LatestImageBytes, 0, LatestImageBytes.Length);
                 Marshal.FreeHGlobal(imageHandle);
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                Debug.LogException(e);
             }
             VideoPreview.SetBytes(LatestImageBytes, false);
+            PhotoCaptureObject.StopPhotoModeAsync(OnStoppedPhotoMode);
         }
 
         void OnStoppedPhotoMode(PhotoCapture.PhotoCaptureResult result)
         {
-            photoCaptureObject.Dispose();
-            photoCaptureObject = null;
         }
+
+        #endregion
+
+        #region video
+
+        protected HoloLensCameraStream.Resolution VideoResolution;
+        protected byte[] VideoFrameBuffer;
+        protected FileStream VideoFrames;
+        protected BinaryWriter VideoBinaryWriter;
+        protected string OutputDirectory { get; } = DateTime.Now.ToString("yyMMddHHmmss");
+
+        protected void VideoStart()
+        {
+            Utilities.CreateFolder(OutputDirectory);
+
+            UVideoCapture.Instance.GetVideoCaptureAsync(OnVideoCreated);
+            UVideoCapture.Instance.FrameSampleAcquired += OnFrameCaptured;
+            Configurations.Instance.SetAndAddCallback("Utilities_Record", false, v =>
+            {
+                if (v)
+                {
+                    VideoFrames = File.Create(Utilities.FullPath(Path.Combine(OutputDirectory, "frames.raw")));
+                    VideoBinaryWriter = new BinaryWriter(VideoFrames);
+                    UVideoCapture.Instance.StartCamera();
+                }
+                else
+                {
+                    UVideoCapture.Instance.StopCamera();
+                    VideoBinaryWriter.Dispose();
+                    VideoFrames.Dispose();
+
+                    MeshSaver.Save("room", SpatialMappingManager.Instance.GetMeshFilters());
+                }
+            }, Configurations.RunOnMainThead.YES, Configurations.WaitUntilDone.NO);
+        }
+
+        void OnVideoCreated(HoloLensCameraStream.VideoCapture capture)
+        {
+            UVideoCapture.Instance.SetNativeISpatialCoordinateSystemPtr(UnityEngine.XR.WSA.WorldManager.GetNativeISpatialCoordinateSystemPtr());
+            VideoResolution = new HoloLensCameraStream.Resolution(1344, 756);
+            float framerate = UVideoCapture.Instance.GetHighestFrameRate(VideoResolution);
+            UVideoCapture.Instance.Params = new HoloLensCameraStream.CameraParameters
+            {
+                pixelFormat = HoloLensCameraStream.CapturePixelFormat.BGRA32,
+                cameraResolutionWidth = VideoResolution.width,
+                cameraResolutionHeight = VideoResolution.height,
+                frameRate = Mathf.RoundToInt(framerate),
+            };
+        }
+
+        void OnFrameCaptured(HoloLensCameraStream.VideoCaptureSample sample)
+        {
+            if (VideoFrameBuffer == null)
+                VideoFrameBuffer = new byte[sample.dataLength];
+            float[] matrix = null;
+            if (!File.Exists(Path.Combine(OutputDirectory, "proj.txt")))
+            {
+                if (sample.TryGetProjectionMatrix(out matrix) == false)
+                {
+                    return;
+                }
+                Matrix4x4 m = LocatableCameraUtils.ConvertFloatArrayToMatrix4x4(matrix);
+                Vector4 column2 = m.GetColumn(2);
+                column2.x = -column2.x;
+                column2.y = -column2.y;
+                m.SetColumn(2, column2);
+                float halfWidth = VideoResolution.width / 2f;
+                float halfHeight = VideoResolution.height / 2f;
+                float Fx = m.GetColumn(0).x * halfWidth;
+                float Fy = m.GetColumn(1).y * halfHeight;
+                float offsetX = m.GetColumn(2).x;
+                float offsetY = m.GetColumn(2).y;
+                float Cx = halfWidth + offsetX * halfWidth;
+                float Cy = halfHeight + offsetY * halfHeight;
+                Utilities.SaveFile(string.Format("{0} {1}\n{2} {3} {4} {5}", VideoResolution.width, VideoResolution.height, Fx, Fy, Cx, Cy),
+                    Path.Combine(OutputDirectory, "proj.txt"));
+            }
+            if (sample.TryGetCameraToWorldMatrix(out matrix) == false)
+            {
+                return;
+            }
+            sample.CopyRawImageDataIntoBuffer(VideoFrameBuffer);
+            for (int i = 0; i < 16; ++i)
+                VideoBinaryWriter.Write(matrix[i]);
+            VideoBinaryWriter.Write(VideoFrameBuffer);
+        }
+
+        #endregion
     }
 }

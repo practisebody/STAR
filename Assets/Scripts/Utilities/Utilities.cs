@@ -3,8 +3,13 @@ using SimpleJSON;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using UnityEngine;
+#if NETFX_CORE
+using Windows.Networking;
+using Windows.Networking.Connectivity;
+#endif
 #if NETFX_CORE
 using Windows.Storage;
 #endif
@@ -13,6 +18,21 @@ namespace STAR
 {
     static public class Utilities
     {
+        // TODO(chengyuanlin)
+        // move to LCY?
+
+        public static string GetIPAddress()
+        {
+#if NETFX_CORE
+            ConnectionProfile icp = NetworkInformation.GetInternetConnectionProfile();
+            HostName hostname = NetworkInformation.GetHostNames().SingleOrDefault(hn =>
+                    hn.IPInformation?.NetworkAdapter != null && hn.IPInformation.NetworkAdapter.NetworkAdapterId
+                    == icp.NetworkAdapter.NetworkAdapterId);
+            return hostname?.CanonicalName;
+#else
+            return string.Empty;
+#endif
+        }
         // Unity
         public static string FolderName
         {
@@ -24,6 +44,11 @@ namespace STAR
                 return Application.persistentDataPath;
 #endif
             }
+        }
+
+        public static string FullPath(string name)
+        {
+            return Path.Combine(FolderName, name);
         }
 
         public static void CreateFolder(string name)
@@ -41,6 +66,11 @@ namespace STAR
             File.WriteAllBytes(fullname, bytes);
         }
 
+        public static void SaveFile(string content, string name)
+        {
+            string fullname = Path.Combine(FolderName, name);
+            File.WriteAllText(fullname, content);
+        }
 
         // JSONNode
         public static Vector3 JSON2Vector3(JSONNode node)
@@ -54,22 +84,6 @@ namespace STAR
             int rowStart, a, b;
             int stride = width * channel;
             byte temp;
-            /*for (int y = 0; y < height; ++y)
-            {
-                rowStart = y * stride;
-                for (int x = 0; x < width / 2; ++x)
-                {
-                    a = rowStart + x * channel;
-                    b = rowStart + (width - x - 1) * channel;
-                    for (int i = 0; i < channel; ++i)
-                    {
-                        temp = array[a + i];
-                        array[a + i] = array[b + i];
-                        array[b + i] = temp;
-                    }
-                }
-            }*/
-
             for (int y = 0; y < height / 2; ++y)
             {
                 rowStart = y * stride;

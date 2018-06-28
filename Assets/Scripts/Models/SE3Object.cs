@@ -7,7 +7,7 @@ namespace STAR
 {
     public class SE3Object : MonoBehaviour, IObservable<SE3Object>
     {
-        public SE3 LocalToWorldMatrix
+        public SE3 localToWorldMatrix
         {
             get
             {
@@ -16,7 +16,7 @@ namespace STAR
             set
             {
                 transform.SetPositionAndRotation(value.Translation, value.Rotation);
-                Valid = true;
+                valid = true;
                 NotifyObserver();
             }
         }
@@ -26,7 +26,7 @@ namespace STAR
             OnChange?.Invoke(this);
         }
 
-        public bool Valid { get; protected set; } = false;
+        public bool valid { get; protected set; } = false;
 
         public event OnChangeCallback<SE3Object> OnChange;
     }

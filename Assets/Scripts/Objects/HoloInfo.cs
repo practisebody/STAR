@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -22,7 +23,7 @@ namespace STAR
             Canvas = transform.Find("Canvas").GetComponent<Canvas>();
             LogStart();
             StatusStart();
-            Configurations.Instance.SetAndAddCallback("ShowDebug", true, v => gameObject.SetActive(v), Configurations.RunOnMainThead.YES);
+            Configurations.Instance.SetAndAddCallback("Billboard_InformationPane", false, v => gameObject.SetActive(v),Configurations.CallNow.YES, Configurations.RunOnMainThead.YES);
         }
 
         private void Update()
@@ -45,24 +46,21 @@ namespace STAR
 
         public string LogLastNString(int n = 20)
         {
-            string log = "";
+            StringBuilder sb = new StringBuilder(2000);
             int start = Math.Max(Logs.Count - 20, 0);
             for (; start < Logs.Count; ++start)
             {
-                log += Logs[start] + "\n";
+                sb.AppendLine(Logs[start]);
             }
-            return log;
+            return sb.ToString(); ;
         }
 
         protected void LogMessageReceived(string condition, string stackTrace, LogType type)
         {
-            if (condition.Contains("RenderTexture.GenerateMips failed"))
-            {
-                return;
-            }
             Logs.Add(condition);
-            LogText.text = LogLastNString(MaxNumMessages);
+            LCY.Utilities.InvokeMain(() => LogText.text = LogLastNString(MaxNumMessages), false);
             LogString += condition + "\n";
+            ControllerManager.Instance.SendLog();
         }
 
         #endregion
@@ -85,14 +83,17 @@ namespace STAR
 
         public void UpdateStatusString()
         {
-            StatusString = String.Empty;
-            StatusString += "Configs:" + Configurations.Instance.ToString(":", "\n") + "\n";
-            StatusString += "Camera: " + Utilities.FormatMatrix4x4(Camera.transform.localToWorldMatrix) + "\n";
-            StatusString += "Check2World: " + Utilities.FormatMatrix4x4(Checkerboard.LocalToWorldMatrix) + "\n";
-            //if (TopDownCamera.IntrinsicValid != null)
-            //    StatusString += "TopDown2Checker: r:" + Utilities.FormatVector3(Utilities.JSON2Vector3(TopDownCamera.CalibrationData["rvec"])) + " t:" + Utilities.FormatVector3(Utilities.JSON2Vector3(TopDownCamera.CalibrationData["tvec"])) + "\n";
-            StatusString += "AnnotationServer: " + (Annotations.Connected ? "Connected" : "Connecting") + "\n";
-            StatusString += "Anno: " + Annotations?.ToString() + "\n";
+            StringBuilder sb = new StringBuilder(1000);
+            sb.Append("Configs:").AppendLine(Configurations.Instance.ToString(":", "\n"));
+            sb.Append("Camera: ").AppendLine(Utilities.FormatMatrix4x4(Camera.transform.localToWorldMatrix));
+            sb.Append("Check2World: ").AppendLine(Utilities.FormatMatrix4x4(Checkerboard.localToWorldMatrix));
+            sb.Append("Topdown2World: ").AppendLine(Utilities.FormatMatrix4x4(TopDownCamera.localToWorldMatrix));
+            sb.Append("AnnotationServer: socket:").Append(ConnectionManager.Instance.SocketConnected ? "Connected" : "Connecting")
+                .Append(";webrtc:").Append(ConnectionManager.Instance.WebRTCConnected ? "Connected" : "Connecting")
+                .Append(";webrtcpose:").Append(ConnectionManager.Instance.WebRTCStatus)
+                .AppendLine();
+            sb.Append("Anno: ").AppendLine(Annotations?.ToString());
+            StatusString = sb.ToString();
         }
 
         #endregion

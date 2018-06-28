@@ -12,25 +12,19 @@ namespace STAR
         protected List<Vector2> checkerPoints;
         public List<Vector2> CheckerPoints
         {
-            // TODO(chengyuanlin)
-            // do i need get?
-            get
-            {
-                return checkerPoints;
-            }
+            get { return checkerPoints; }
             protected set
             {
-                checkerPoints = value;
-                Vector3 origin = LocalToWorldMatrix.Translation;
-                Quaternion rotation = LocalToWorldMatrix.Rotation;
-                LCY.Utilities.DestroyChildren(TopDownCameraRays);
-                foreach (Vector2 p in value)
+                if ((checkerPoints = value) != null)
                 {
-                    Vector3 direction = rotation * UnprojRaw(p, DoUndistort.YES);
-                    RaycastHit hitInfo;
-                    Physics.Raycast(origin, direction, out hitInfo, 300.0f, SpatialMappingManager.Instance.LayerMask);
-                    if (ShowTopDownCamera)
+                    Vector3 origin = localToWorldMatrix.Translation;
+                    Quaternion rotation = localToWorldMatrix.Rotation;
+                    LCY.Utilities.DestroyChildren(TopDownCameraRays);
+                    foreach (Vector2 p in value)
                     {
+                        Vector3 direction = rotation * UnprojRaw(p, DoUndistort.YES);
+                        RaycastHit hitInfo;
+                        Physics.Raycast(origin, direction, out hitInfo, 300.0f, SpatialMappingManager.Instance.LayerMask);
                         ObjectFactory.NewRay(TopDownCameraRays, origin, hitInfo.point, Color.green);
                     }
                 }
@@ -84,7 +78,7 @@ namespace STAR
 
                     // extrinsics
                     CheckerToLocalMatrix = Matrix4x4.TRS(t, R, Vector3.one);
-                    if (Checkerboard.LocalToWorldMatrix != null)
+                    if (Checkerboard.localToWorldMatrix != null)
                     {
                         UpdateLocation(null);
                     }
@@ -109,13 +103,11 @@ namespace STAR
         
         //protected readonly string TEST_RECEIVED_MSG_FROM_TOPDOWN = "{\"cx\": 328.90630324279033, \"cy\": 237.78931042000124, \"fx\": 514.24881005892848, \"fy\": 507.79248508954851, \"height\": 480, \"k1\": 0.0914051948147546, \"k2\": -0.22685463029938513, \"k3\": 0.18341275494159623, \"p1\": -0.022599626729701242, \"p2\": 0.002208592710481527, \"rms\": 0.39623399395854214, \"rvec\": [0.0, 0.0, 0.0], \"tvec\": [0.0, 0.0, 0.0], \"width\": 640, \"chess_x\": 5, \"chess_y\": 4, \"chess_square_size_meters\": 0.03}";
         //protected readonly string TEST_RECEIVED_MSG_FROM_TOPDOWN = "{\"cx\": 328.90630324279033, \"cy\": 237.78931042000124, \"fx\": 514.24881005892848, \"fy\": 507.79248508954851, \"height\": 480, \"k1\": 0.0914051948147546, \"k2\": -0.22685463029938513, \"k3\": 0.18341275494159623, \"p1\": -0.022599626729701242, \"p2\": 0.002208592710481527, \"rms\": 0.39623399395854214, \"rvec\": [0.0, 0.0, 0.0], \"tvec\": [0.0, 0.0, 0.0], \"width\": 640, \"chess_x\": 7, \"chess_y\": 5, \"chess_square_size_meters\": 0.03}";
-        protected readonly string TEST_RECEIVED_MSG_FROM_TOPDOWN = "{\"cx\": 328.90630324279033, \"cy\": 237.78931042000124, \"fx\": 514.24881005892848, \"fy\": 507.79248508954851, \"height\": 480, \"k1\": 0.0914051948147546, \"k2\": -0.22685463029938513, \"k3\": 0.18341275494159623, \"p1\": -0.022599626729701242, \"p2\": 0.002208592710481527, \"rms\": 0.39623399395854214, \"rvec\": [0.0, 0.0, 0.0], \"tvec\": [0.0, 0.0, 0.0], \"width\": 640, \"chess_x\": 9, \"chess_y\": 6, \"chess_square_size_meters\": 0.05}";
+        //protected readonly string TEST_RECEIVED_MSG_FROM_TOPDOWN = "{\"cx\": 328.90630324279033, \"cy\": 237.78931042000124, \"fx\": 514.24881005892848, \"fy\": 507.79248508954851, \"height\": 480, \"k1\": 0.0914051948147546, \"k2\": -0.22685463029938513, \"k3\": 0.18341275494159623, \"p1\": -0.022599626729701242, \"p2\": 0.002208592710481527, \"rms\": 0.39623399395854214, \"rvec\": [0.0, 0.0, 0.0], \"tvec\": [0.0, 0.0, 0.0], \"width\": 640, \"chess_x\": 9, \"chess_y\": 6, \"chess_square_size_meters\": 0.05}";
 
         public Checkerboard Checkerboard;
         public Transform TopDownCameraRays;
         public HololensCamera HololensCamera;
-
-        protected bool ShowTopDownCamera { get; set; }
 
         protected USocketServer Server { get; set; }
         public int Port = 4434;
@@ -128,12 +120,12 @@ namespace STAR
             Server.ConnectionReceived += ConnectionReceived;
             Server.Listen();
 
-            Configurations.Instance.SetAndAddCallback("ShowTopDownCamera", true, v => transform.parent.gameObject.SetActive(ShowTopDownCamera = v), Configurations.CallNow.YES, Configurations.RunOnMainThead.YES);
+            Configurations.Instance.SetAndAddCallback("Visual_TopdownCamera", false, v => transform.parent.gameObject.SetActive(v), Configurations.CallNow.YES, Configurations.RunOnMainThead.YES);
 
             Checkerboard.OnChange += UpdateLocation;
 
             // dummy input
-            MessageReceived(TEST_RECEIVED_MSG_FROM_TOPDOWN);
+            //MessageReceived(TEST_RECEIVED_MSG_FROM_TOPDOWN);
         }
 
         protected void ConnectionReceived(USocketServer server, USocketClient client)
@@ -157,8 +149,9 @@ namespace STAR
 
         protected void UpdateLocation(SE3Object sender)
         {
-            LocalToWorldMatrix = Checkerboard.LocalToWorldMatrix * CheckerToLocalMatrix.inverse;
-            //CheckerPoints = checkerPoints;
+            localToWorldMatrix = Checkerboard.localToWorldMatrix * CheckerToLocalMatrix.inverse;
+            WorldManager.Instance.Right = transform.right;
+            CheckerPoints = checkerPoints;
             ExtrinsicValid = true;
         }
     }

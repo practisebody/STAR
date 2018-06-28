@@ -64,6 +64,6 @@ namespace STAR
 
         public bool IntrinsicValid { get; protected set; } = false;
         public bool ExtrinsicValid { get; protected set; } = false;
-        public new bool Valid { get { return IntrinsicValid && ExtrinsicValid; } }
+        public new bool valid { get { return IntrinsicValid && ExtrinsicValid; } }
     }
 }

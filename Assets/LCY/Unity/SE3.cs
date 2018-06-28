@@ -78,6 +78,8 @@ namespace LCY
             m.m12 = -m.m12;
             m.m22 = -m.m22;
             return m;
+            // TODO
+            // return new Matrix4x4(matrix.GetColumn(0), matrix.GetColumn(1), -matrix.GetColumn(2), matrix.GetColumn(3));
         }
 
         public SE3 Lerp(SE3 a, SE3 b, float t)

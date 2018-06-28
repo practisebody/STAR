@@ -1,15 +1,17 @@
 ﻿using LCY;
 using System;
 using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 
 namespace LCY
 {
     public sealed class Configurations : Singleton<Configurations>
     {
-        protected volatile Dictionary<string, object> Configs = new Dictionary<string, object>();
+        private volatile Dictionary<string, object> Configs = new Dictionary<string, object>();
+        public delegate void Callback();
         public delegate void OnChangeCallback(dynamic v);
-        protected Dictionary<string, Delegate> Events = new Dictionary<string, Delegate>();
+        private Dictionary<string, Delegate> Events = new Dictionary<string, Delegate>();
 
         #region configs
 
@@ -18,9 +20,12 @@ namespace LCY
             return Configs.ContainsKey(key);
         }
 
-        protected void Set(string key, object value, Type T)
+        private void Set(string key, object value, Type T)
         {
-            Configs[key] = Convert.ChangeType(value, T);
+            if (T == null)
+                Configs[key] = null;
+            else
+                Configs[key] = Convert.ChangeType(value, T);
             Delegate del;
             if (Events.TryGetValue(key, out del))
                 del.DynamicInvoke(Get(key));
@@ -29,9 +34,9 @@ namespace LCY
         public void Set(string key, object value)
         {
             if (Contains(key))
-                Set(key, value, Configs[key].GetType());
+                Set(key, value, Configs[key]?.GetType());
             else
-                Set(key, value, value.GetType());
+                Set(key, value, value?.GetType());
         }
 
         public void SetType(string key, Type T)
@@ -114,9 +119,23 @@ namespace LCY
             }
         }
 
+        public void AddCallback(string key, Callback callback, RunOnMainThead runOnMainThread = RunOnMainThead.NO, WaitUntilDone waitUntilDone = WaitUntilDone.NO)
+        {
+            Set(key, null, null);
+            Delegate del = runOnMainThread == RunOnMainThead.YES ? () => Utilities.InvokeMain(() => callback(), waitUntilDone == WaitUntilDone.YES ? true : false) : callback;
+            if (Events.ContainsKey(key))
+            {
+                Events[key] = Delegate.Combine(Events[key], del);
+            }
+            else
+            {
+                Events[key] = del;
+            }
+        }
+
         public void AddCallback(string key, OnChangeCallback callback, RunOnMainThead runOnMainThread = RunOnMainThead.NO, WaitUntilDone waitUntilDone = WaitUntilDone.NO)
         {
-            Delegate del = runOnMainThread == RunOnMainThead.YES ? (OnChangeCallback)((dynamic v) => Utilities.InvokeMain(() => callback(v), waitUntilDone == WaitUntilDone.YES ? true : false)) : callback;
+            Delegate del = runOnMainThread == RunOnMainThead.YES ? (dynamic v) => Utilities.InvokeMain(() => callback(v), waitUntilDone == WaitUntilDone.YES ? true : false) : callback;
             if (Events.ContainsKey(key))
             {
                 Events[key] = Delegate.Combine(Events[key], del);
@@ -176,11 +195,11 @@ namespace LCY
 
         public string ToString(string sep, string endl = "")
         {
-            string result = "";
             Dictionary<string, object> temp = Configs;
+            StringBuilder sb = new StringBuilder(temp.Count * 30);
             foreach (KeyValuePair<string, object> c in temp)
-                result += c.Key + sep + c.Value.ToString() + endl;
-            return result;
+                sb.Append(c.Key).Append(sep).Append(c.Value?.ToString()).Append(endl);
+            return sb.ToString();
         }
 
         #endregion
