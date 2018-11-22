@@ -9,6 +9,8 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using UnityEngine.EventSystems;
 using System.Threading.Tasks;
+using System.Text;
+using System.IO;
 #if NETFX_CORE
 using Windows.UI.Core;
 using Windows.ApplicationModel.Core;
@@ -23,47 +25,72 @@ namespace STAR
     public class ConnectionManager : UnitySingleton<ConnectionManager>
     {
         public Annotations Annotations;
+        public HololensCamera HololensCamera;
 
         private void Start()
         {
             SocketStart();
-            //WebRTCStart();
-            WebRTCPoseStart();
+            WebRTCStart();
         }
 
         private void Update()
         {
-            WebRTCPoseUpdate();
+            WebRTCUpdate();
         }
 
-        protected void AnnotationReceived(string s)
+        protected void MessageReceived(string s)
         {
             try
             {
                 JSONNode node = JSON.Parse(s);
-                string type = node["command"].Value;
-                int id = node["id"].AsInt;
-                LCY.Utilities.InvokeMain(() =>
+                if (node["posX"] != null)
                 {
-                    switch (type)
+                    LCY.Utilities.InvokeMain(() =>
                     {
-                        case "CreateAnnotationCommand":
-                        case "UpdateAnnotationCommand":
-                            Annotations.Add(id, ObjectFactory.NewAnnotation(node["annotation_memory"]));
-                            break;
-                        case "DeleteAnnotationCommand":
-                            Annotations.Remove(id);
-                            break;
-                        default:
-                            throw new Exception("Unrecognized command type");
-                    }
-                    Annotations.Refresh();
-                }, true);
+                        Matrix4x4 m = new Matrix4x4();
+                        m.SetTRS(new Vector3(node["posX"].AsFloat, node["posY"].AsFloat, node["posZ"].AsFloat),
+                            new Quaternion(node["rotX"].AsFloat, node["rotY"].AsFloat, node["rotZ"].AsFloat, node["rotW"].AsFloat), Vector3.one);
+                        m.m02 = -m.m02;
+                        m.m12 = -m.m12;
+                        m.m20 = -m.m20;
+                        m.m21 = -m.m21;
+                        m.m23 = -m.m23;
+                        HololensCamera.localToWorldMatrix = m;
+                    }, false);
+                }
+                else if (node["command"].Value == "REINIT_CAMERA")
+                {
+                    Configurations.Instance.Set("Stabilization_Init", null);
+                }
+                else
+                    AnnotationReceived(node);
             }
             catch (Exception e)
             {
                 Utilities.LogException(e);
             }
+        }
+
+        protected void AnnotationReceived(JSONNode node)
+        {
+            string type = node["command"].Value;
+            int id = node["id"].AsInt;
+            LCY.Utilities.InvokeMain(() =>
+            {
+                switch (type)
+                {
+                    case "CreateAnnotationCommand":
+                    case "UpdateAnnotationCommand":
+                        Annotations.Add(id, ObjectFactory.NewAnnotation(node));
+                        break;
+                    case "DeleteAnnotationCommand":
+                        Annotations.Remove(id);
+                        break;
+                    default:
+                        throw new Exception("Unrecognized command type");
+                }
+                Annotations.Refresh();
+            }, true);
         }
 
         #region socket
@@ -76,7 +103,7 @@ namespace STAR
         protected void SocketStart()
         {
             Client = new USocketClient(Hostname, Port);
-            Client.MessageReceived += AnnotationReceived;
+            Client.MessageReceived += MessageReceived;
             Client.Persistent = true;
             Client.Timeout = 1000;
             Configurations.Instance.SetAndAddCallback("ConnectionSocket_IP", Hostname, v => Client.Host = v);
@@ -92,84 +119,7 @@ namespace STAR
 
         #endregion
 
-        #region webrtc
-
-        protected StarWebrtcContext StarWebrtcContext;
-        protected bool WebRTCVerboseLog { get; set; }
-        public bool WebRTCConnected { get; protected set; } = false;
-
-        protected void WebRTCStart()
-        {
-            StarWebrtcContext = StarWebrtcContext.CreateAnnotationReceiverContext();
-            //StarWebrtcContext.SignallingServerUrl = "https://webrtc-signal-iusm-study.herokuapp.com";
-            Messenger.AddListener<string>(SympleLog.LogTrace, WebRTCLog);
-            Messenger.AddListener<string>(SympleLog.LogDebug, WebRTCLog);
-            Messenger.AddListener<string>(SympleLog.LogInfo, WebRTCLog);
-            Messenger.AddListener<string>(SympleLog.LogError, WebRTCLog);
-            Messenger.AddListener<string>(SympleLog.PeerAdded, (s) =>
-            {
-                Debug.Log(s + " connected");
-                switch (s)
-                {
-                    case "star-mentor":
-                        WebRTCConnected = true;
-                        // remove all the annotations
-                        Annotations.Clear();
-                        LCY.Utilities.InvokeMain(() => Annotations.Refresh(), false);
-                        break;
-                }
-            });
-            Messenger.AddListener<string>(SympleLog.PeerRemoved, (s) =>
-            {
-                Debug.Log(s + " disconnected");
-                switch (s)
-                {
-                    case "star-mentor":
-                        WebRTCConnected = false;
-                        break;
-                }
-            });
-            Messenger.AddListener<string>(SympleLog.IncomingMessage, WebRTCReceived);
-            Configurations.Instance.SetAndAddCallback("ConnectionWebRTC_VerboseLog", false, v => WebRTCVerboseLog = v, Configurations.CallNow.YES);
-            Configurations.Instance.SetAndAddCallback("ConnectionWebRTC_Connect", true, v =>
-            {
-                if (v)
-                    StarWebrtcContext.initAndStartWebRTC();
-                else
-                {
-                    StarWebrtcContext.teardown();
-                    WebRTCConnected = false;
-                }
-            }, Configurations.CallNow.YES);
-        }
-
-        protected void WebRTCLog(string s)
-        {
-            if (WebRTCVerboseLog)
-            {
-                Debug.Log(s);
-            }
-        }
-
-        protected void WebRTCReceived(string s)
-        {
-            try
-            {
-#if NETFX_CORE
-                JObject obj = JObject.Parse(s);
-                string t = obj["message"].ToString();
-                AnnotationReceived(t);
-#endif
-            }
-            catch (Exception e)
-            {
-                Utilities.LogException(e);
-            }
-        }
-
-        #endregion
-
-        #region webrtcpose
+        #region WebRTC
 
         public enum Status
         {
@@ -201,16 +151,22 @@ namespace STAR
         }
 
         // make it a configuration
+        public Status WebRTCStatus { get; private set; } = Status.NotConnected;
+
         protected string ServerAddress = "https://purduestarproj-webrtc-signal.herokuapp.com";
         protected string ServerPort = "443";
         protected string ClientName = "star-trainee"; // star-trainee, star-mentor, etc
         protected string PreferredVideoCodec = "VP8";
 
-        public Status WebRTCStatus { get; private set; } = Status.NotConnected;
         protected List<Command> commandQueue = new List<Command>();
-        //protected int selectedPeerIndex = -1;
+        public String PeerName { get; protected set; } = null;
 
-        protected void WebRTCPoseStart()
+        // saving pose information
+        //protected bool VideoPose = false;
+        //protected FileStream VideoFrames;
+        //protected BinaryWriter VideoBinaryWriter;
+
+        protected void WebRTCStart()
         {
 #if NETFX_CORE
             Conductor.Instance.LocalStreamEnabled = true;
@@ -249,7 +205,7 @@ namespace STAR
             });
             Configurations.Instance.AddCallback("ConnectionWebRTC_Call", () =>
             {
-                if (WebRTCStatus == Status.Connected)
+                if (WebRTCStatus == Status.Connected && PeerName != null)
                 {
                     new Task(() =>
                     {
@@ -284,9 +240,34 @@ namespace STAR
                 }
             });
 #endif
+            /*Configurations.Instance.SetAndAddCallback("Stabilization_SavePose", VideoPose, (v) =>
+            {
+                if (VideoPose = v)
+                {
+                    VideoFrames = File.Create(Utilities.FullPath(DateTime.Now.ToString("yyMMdd_HHmmss") + ".txt"));
+                    VideoBinaryWriter = new BinaryWriter(VideoFrames);
+                }
+                else
+                {
+                    VideoBinaryWriter.Dispose();
+                    VideoFrames.Dispose();
+                }
+            }, Configurations.RunOnMainThead.YES, Configurations.WaitUntilDone.YES);*/
+            Configurations.Instance.AddCallback("Annotation_DummyDense", () =>
+            {
+                StringBuilder sb = new StringBuilder(2500);
+                sb.Append("{\"id\":0,\"command\":\"CreateAnnotationCommand\",\"annotation_memory\":{\"annotation\":{\"annotationPoints\":[");
+                sb.Append("{\"x\":0.0,\"y\":0.0}");
+                for (int i = 1; i <= 100; ++i)
+                {
+                    sb.Append(",{\"x\":").Append(i / 100.0f).Append(",\"y\":").Append(i / 100.0f).Append("}");
+                }
+                sb.Append("],\"annotationType\":\"polyline\"}}}");
+                MessageReceived(sb.ToString());
+            }, Configurations.RunOnMainThead.NO);
         }
 
-        protected void WebRTCPoseUpdate()
+        protected void WebRTCUpdate()
         {
             lock (this)
             {
@@ -319,76 +300,18 @@ namespace STAR
 
         protected void AddRemotePeer(string peerName)
         {
-            bool isSelf = (peerName == ClientName); // when we connect, our own user appears as a peer. we don't want to accidentally try to call ourselves.
-
             Debug.Log("AddRemotePeer: " + peerName);
-            //GameObject textItem = (GameObject)Instantiate(TextItemPrefab);
-
-            //textItem.GetComponent<Text>().text = peerName;
-
-            //if (isSelf)
-            //{
-            //    textItem.transform.SetParent(SelfConnectedAsContent, false);
-            //}
-            //else
-            //{
-            //    textItem.transform.SetParent(PeerContent, false);
-
-            //    EventTrigger trigger = textItem.GetComponentInChildren<EventTrigger>();
-            //    EventTrigger.Entry entry = new EventTrigger.Entry();
-            //    entry.eventID = EventTriggerType.PointerDown;
-            //    entry.callback.AddListener((data) => { OnRemotePeerItemClick((PointerEventData)data); });
-            //    trigger.triggers.Add(entry);
-
-            //    if (selectedPeerIndex == -1)
-            //    {
-            //        textItem.GetComponent<Text>().fontStyle = FontStyle.Bold;
-            //        selectedPeerIndex = PeerContent.transform.childCount - 1;
-            //    }
-            //}
+            if (peerName != ClientName)
+                PeerName = peerName;
         }
 
         protected void RemoveRemotePeer(string peerName)
         {
-            bool isSelf = (peerName == ClientName); // when we connect, our own user appears as a peer. we don't want to accidentally try to call ourselves.
-
             Debug.Log("RemoveRemotePeer: " + peerName);
-
-            //if (isSelf)
-            //{
-            //    for (int i = 0; i < SelfConnectedAsContent.transform.childCount; i++)
-            //    {
-            //        if (SelfConnectedAsContent.GetChild(i).GetComponent<Text>().text == peerName)
-            //        {
-            //            SelfConnectedAsContent.GetChild(i).SetParent(null);
-            //            break;
-            //        }
-            //    }
-            //}
-            //else
-            //{
-            //    for (int i = 0; i < PeerContent.transform.childCount; i++)
-            //    {
-            //        if (PeerContent.GetChild(i).GetComponent<Text>().text == peerName)
-            //        {
-            //            PeerContent.GetChild(i).SetParent(null);
-            //            if (selectedPeerIndex == i)
-            //            {
-            //                if (PeerContent.transform.childCount > 0)
-            //                {
-            //                    PeerContent.GetChild(0).GetComponent<Text>().fontStyle = FontStyle.Bold;
-            //                    selectedPeerIndex = 0;
-            //                }
-            //                else
-            //                {
-            //                    selectedPeerIndex = -1;
-            //                }
-            //            }
-            //            break;
-            //        }
-            //    }
-            //}
+            PeerName = null;
         }
+
+        public Camera Camera;
 
         // fired whenever we encode one of our own video frames before sending it to the remote peer.
         // if there is pose data, posXYZ and rotXYZW will have non-zero values.
@@ -396,12 +319,27 @@ namespace STAR
                 byte[] yPlane, uint yPitch, byte[] vPlane, uint vPitch, byte[] uPlane, uint uPitch,
                 float posX, float posY, float posZ, float rotX, float rotY, float rotZ, float rotW)
         {
-            Debug.Log("ControlScript: OnSelfRawFrame " + width + " " + height + " " + posX + " " + posY + " " + posZ + " " + rotX + " " + rotY + " " + rotZ + " " + rotW);
+            /*LCY.Utilities.InvokeMain(() =>
+            {
+                if (VideoPose)
+                {
+                    SE3 m = SE3.ConvertHoloLensPoseToSE3(new Vector3(posX, posY, posZ), new Quaternion(rotX, rotY, rotZ, rotW));
+                    Matrix4x4 m_ = Camera.transform.localToWorldMatrix;
+
+                    for (int i = 0; i < 16; ++i)
+                        VideoBinaryWriter.Write(m_[i]);
+                }
+
+            //    Debug.Log("aa" + posX + " " + posY + " " + posZ + " r " + rotX + " " + rotY + " " + rotZ + " " + rotW);
+            //    Debug.Log(m.Matrix);
+            //    Debug.Log(m_);
+            }, true);*/
         }
 
         protected void Conductor_IncomingRawMessage(string rawMessageString)
         {
             Debug.Log("incoming raw message from peer: " + rawMessageString);
+            MessageReceived(rawMessageString);
         }
 
         protected void Conductor_Initialized(bool succeeded)
@@ -595,7 +533,7 @@ namespace STAR
 
             uint preferredWidth = 1344;
             uint preferredHeght = 756;
-            uint preferredFrameRate = 15;
+            uint preferredFrameRate = 30;
             uint minSizeDiff = uint.MaxValue;
             Conductor.CaptureCapability selectedCapability = null;
             var videoDeviceList = Conductor.Instance.GetVideoCaptureDevices();

@@ -9,13 +9,14 @@ namespace STAR
 {
     public class PolylineAnnotation : Annotation
     {
-        public List<Vector2> Positions { get; set; }
+        public List<Vector2> Positions { get; protected set; }
 
-        public PolylineAnnotation(JSONNode node)
+        public PolylineAnnotation(JSONNode node) : base(node)
         {
             Type = AnnotationType.POLYLINE;
+            JSONNode anno = node["annotation_memory"]["annotation"];
             Positions = new List<Vector2>();
-            foreach (JSONNode n in node["annotationPoints"].AsArray)
+            foreach (JSONNode n in anno["annotationPoints"].AsArray)
             {
                 Positions.Add(new Vector2(n["x"].AsFloat, n["y"].AsFloat));
             }

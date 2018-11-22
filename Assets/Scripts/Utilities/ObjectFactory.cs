@@ -10,11 +10,27 @@ namespace STAR
     {
         private void Start()
         {
+            InitGizmoPrefab();
             InitRayPrefab();
-            InitCheckerboardPrefab();
             InitToolPrefab();
             InitPolylinePrefab();
         }
+
+        #region gizmo
+        
+        static protected GameObject GizmoPrefab { get; set; }
+
+        static protected void InitGizmoPrefab()
+        {
+            GizmoPrefab = Resources.Load<GameObject>("Gizmo");
+        }
+
+        static public GameObject NewGizmo(Transform parent, Vector3 position, Quaternion rotation)
+        {
+            return Instantiate(GizmoPrefab, position, rotation, parent);
+        }
+
+        #endregion
 
         #region ray
 
@@ -52,41 +68,17 @@ namespace STAR
 
         #endregion
 
-        #region Checkerboard
-
-        static protected GameObject CheckerPointPrefab;
-        static protected GameObject CheckerPointRedPrefab;
-
-        static protected void InitCheckerboardPrefab()
-        {
-            CheckerPointPrefab = Resources.Load<GameObject>("CheckerPoint");
-            CheckerPointRedPrefab = Resources.Load<GameObject>("CheckerPointRed");
-        }
-
-        static public void NewCheckerPoints(Transform parent, SE3 transform, int X, int Y, float size)
-        {
-            for (int i = 0; i < X; ++i)
-                for (int j = 0; j < Y; ++j)
-                {
-                    Vector3 position = transform * new Vector3(i * size, j * size, 0.0f);
-                    GameObject obj = Object.Instantiate(CheckerPointRedPrefab, position, Quaternion.identity, parent);
-                }
-        }
-
-        #endregion
-
         #region annotation data
 
         static public Annotation NewAnnotation(JSONNode node)
         {
-            JSONNode anno = node["annotation"];
-            string type = anno["annotationType"].Value;
+            string type = node["annotation_memory"]["annotation"]["annotationType"].Value;
             switch (type)
             {
                 case "polyline":
-                    return new PolylineAnnotation(anno);
+                    return new PolylineAnnotation(node);
                 case "tool":
-                    return new ToolAnnotation(anno);
+                    return new ToolAnnotation(node);
                 default:
                     throw new System.Exception("Unknown annotation type!");
             }

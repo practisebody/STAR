@@ -10,20 +10,15 @@ namespace STAR
 {
     public class HoloInfo : MonoBehaviour
     {
-        protected Canvas Canvas { get; set; }
-        
         public Camera Camera;
-        public Checkerboard Checkerboard;
         public HololensCamera HololensCamera;
-        public TopDownCamera TopDownCamera;
+        public Room Room;
         public Annotations Annotations;
 
         private void Start()
         {
-            Canvas = transform.Find("Canvas").GetComponent<Canvas>();
             LogStart();
             StatusStart();
-            Configurations.Instance.SetAndAddCallback("Billboard_InformationPane", false, v => gameObject.SetActive(v),Configurations.CallNow.YES, Configurations.RunOnMainThead.YES);
         }
 
         private void Update()
@@ -40,7 +35,7 @@ namespace STAR
 
         protected void LogStart()
         {
-            LogText = transform.Find("Canvas/LogPanel/LogText").GetComponent<Text>();
+            LogText = transform.Find("LogPanel/LogText").GetComponent<Text>();
             Application.logMessageReceivedThreaded += LogMessageReceived;
         }
 
@@ -72,28 +67,22 @@ namespace STAR
 
         protected void StatusStart()
         {
-            StatusText = transform.Find("Canvas/LogPanel/StatusText").GetComponent<Text>(); ;
+            StatusText = transform.Find("LogPanel/StatusText").GetComponent<Text>(); ;
         }
 
         protected void StatusUpdate()
         {
-            UpdateStatusString();
-            StatusText.text = StatusString;
-        }
-
-        public void UpdateStatusString()
-        {
             StringBuilder sb = new StringBuilder(1000);
             sb.Append("Configs:").AppendLine(Configurations.Instance.ToString(":", "\n"));
             sb.Append("Camera: ").AppendLine(Utilities.FormatMatrix4x4(Camera.transform.localToWorldMatrix));
-            sb.Append("Check2World: ").AppendLine(Utilities.FormatMatrix4x4(Checkerboard.localToWorldMatrix));
-            sb.Append("Topdown2World: ").AppendLine(Utilities.FormatMatrix4x4(TopDownCamera.localToWorldMatrix));
+            sb.Append("HoloCamera: ").AppendLine(Utilities.FormatMatrix4x4(HololensCamera.transform.localToWorldMatrix));
+            sb.Append("Room: ").AppendLine(Utilities.FormatMatrix4x4(Room.transform.localToWorldMatrix));
             sb.Append("AnnotationServer: socket:").Append(ConnectionManager.Instance.SocketConnected ? "Connected" : "Connecting")
-                .Append(";webrtc:").Append(ConnectionManager.Instance.WebRTCConnected ? "Connected" : "Connecting")
-                .Append(";webrtcpose:").Append(ConnectionManager.Instance.WebRTCStatus)
+                .Append(";webrtc:").Append(ConnectionManager.Instance.WebRTCStatus)
                 .AppendLine();
             sb.Append("Anno: ").AppendLine(Annotations?.ToString());
             StatusString = sb.ToString();
+            StatusText.text = StatusString;
         }
 
         #endregion

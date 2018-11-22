@@ -14,11 +14,11 @@ namespace STAR
         public float Fy { get; protected set; }
         public float Cx { get; protected set; }
         public float Cy { get; protected set; }
-        public float K1 { get; protected set; }
-        public float K2 { get; protected set; }
-        public float P1 { get; protected set; }
-        public float P2 { get; protected set; }
-        public float K3 { get; protected set; }
+        public float K1 { get; protected set; } = 0.0f;
+        public float K2 { get; protected set; } = 0.0f;
+        public float P1 { get; protected set; } = 0.0f;
+        public float P2 { get; protected set; } = 0.0f;
+        public float K3 { get; protected set; } = 0.0f;
 
         public enum DoUndistort
         {
@@ -41,7 +41,12 @@ namespace STAR
             return new Vector2(x, y);
         }
 
-        public Vector3 UnprojRaw(Vector2 p, DoUndistort undistort, bool invertX = false, bool invertY = false)
+        public Vector3 Project(Vector3 P)
+        {
+            return new Vector3((P.x * Fx / P.z + Cx) / Width, (P.y * Fy / P.z + Cy) / Height, P.z);
+        }
+
+        public Vector3 UnprojRaw(Vector2 p, DoUndistort undistort = DoUndistort.NO, bool invertX = false, bool invertY = false)
         {
             float x = (p.x - Cx) / Fx;
             float y = (p.y - Cy) / Fy;
@@ -57,13 +62,13 @@ namespace STAR
                 return new Vector3(x, y, 1.0f).normalized;
         }
 
-        public Vector3 Unproj(Vector2 p, DoUndistort undistort, bool invertX = false, bool invertY = false)
+        public Vector3 Unproj(Vector2 p, DoUndistort undistort = DoUndistort.NO, bool invertX = false, bool invertY = false)
         {
             return UnprojRaw(new Vector2(p.x * Width, p.y * Height), undistort, invertX, invertY);
         }
 
         public bool IntrinsicValid { get; protected set; } = false;
         public bool ExtrinsicValid { get; protected set; } = false;
-        public new bool valid { get { return IntrinsicValid && ExtrinsicValid; } }
+        public new bool Valid { get { return IntrinsicValid && ExtrinsicValid; } }
     }
 }

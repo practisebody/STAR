@@ -6,20 +6,21 @@ namespace STAR
 {
     public class ToolAnnotation : Annotation
     {
-        public Vector2 Position { get; set; }
-        public float Rotation { get; set; }
-        public float Scale { get; set; }
-        public string ToolType { get; set; }
-        public string SelectableColor { get; set; }
+        public Vector2 Position { get; protected set; }
+        public float Rotation { get; protected set; }
+        public float Scale { get; protected set; }
+        public string ToolType { get; protected set; }
+        public string SelectableColor { get; protected set; }
 
-        public ToolAnnotation(JSONNode node)
+        public ToolAnnotation(JSONNode node) : base(node)
         {
             Type = AnnotationType.TOOL;
-            Position = new Vector2(node["annotationPoints"][0]["x"].AsFloat, node["annotationPoints"][0]["y"].AsFloat);
-            Rotation = node["rotation"].AsFloat;
-            Scale = node["scale"].AsFloat;
-            ToolType = node["toolType"].Value;
-            SelectableColor = node["selectableColor"].Value;
+            JSONNode anno = node["annotation_memory"]["annotation"];
+            Position = new Vector2(anno["annotationPoints"][0]["x"].AsFloat, anno["annotationPoints"][0]["y"].AsFloat);
+            Rotation = anno["rotation"].AsFloat;
+            Scale = anno["scale"].AsFloat;
+            ToolType = anno["toolType"].Value;
+            SelectableColor = anno["selectableColor"].Value;
         }
 
         public override string ToString()

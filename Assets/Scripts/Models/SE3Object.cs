@@ -16,8 +16,16 @@ namespace STAR
             set
             {
                 transform.SetPositionAndRotation(value.Translation, value.Rotation);
-                valid = true;
+                Valid = true;
                 NotifyObserver();
+            }
+        }
+
+        public SE3 worldToLocalMatrix
+        {
+            get
+            {
+                return transform.worldToLocalMatrix;
             }
         }
 
@@ -26,7 +34,7 @@ namespace STAR
             OnChange?.Invoke(this);
         }
 
-        public bool valid { get; protected set; } = false;
+        public bool Valid { get; protected set; } = false;
 
         public event OnChangeCallback<SE3Object> OnChange;
     }
