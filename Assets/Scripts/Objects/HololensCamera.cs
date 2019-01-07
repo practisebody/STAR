@@ -167,6 +167,94 @@ namespace STAR
 #endif
                 localToWorldMatrix = c;
             }, Configurations.RunOnMainThead.YES);
+
+            VideoStart();
         }
+
+        #region video
+
+        protected HoloLensCameraStream.Resolution VideoResolution;
+        protected byte[] VideoFrameBuffer;
+        protected FileStream VideoFrames;
+        protected BinaryWriter VideoBinaryWriter;
+        protected string OutputDirectory { get; } = DateTime.Now.ToString("yyMMddHHmmss");
+
+        protected void VideoStart()
+        {
+            Utilities.CreateFolder(OutputDirectory);
+
+            UVideoCapture.Instance.GetVideoCaptureAsync(OnVideoCreated);
+            UVideoCapture.Instance.FrameSampleAcquired += OnFrameCaptured;
+            Configurations.Instance.SetAndAddCallback("Utilities_Record", false, v =>
+            {
+                if (v)
+                {
+                    VideoFrames = File.Create(Utilities.FullPath(Path.Combine(OutputDirectory, "frames.raw")));
+                    VideoBinaryWriter = new BinaryWriter(VideoFrames);
+                    UVideoCapture.Instance.StartCamera();
+                }
+                else
+                {
+                    UVideoCapture.Instance.StopCamera();
+                    VideoBinaryWriter.Dispose();
+                    VideoFrames.Dispose();
+
+                    MeshSaver.Save("room", SpatialMappingManager.Instance.GetMeshFilters());
+                }
+            }, Configurations.RunOnMainThead.YES, Configurations.WaitUntilDone.NO);
+        }
+
+        void OnVideoCreated(HoloLensCameraStream.VideoCapture capture)
+        {
+            UVideoCapture.Instance.SetNativeISpatialCoordinateSystemPtr(UnityEngine.XR.WSA.WorldManager.GetNativeISpatialCoordinateSystemPtr());
+            VideoResolution = new HoloLensCameraStream.Resolution(1344, 756);
+            float framerate = UVideoCapture.Instance.GetHighestFrameRate(VideoResolution);
+            UVideoCapture.Instance.Params = new HoloLensCameraStream.CameraParameters
+            {
+                pixelFormat = HoloLensCameraStream.CapturePixelFormat.BGRA32,
+                cameraResolutionWidth = VideoResolution.width,
+                cameraResolutionHeight = VideoResolution.height,
+                frameRate = Mathf.RoundToInt(framerate),
+            };
+        }
+
+        void OnFrameCaptured(HoloLensCameraStream.VideoCaptureSample sample)
+        {
+            if (VideoFrameBuffer == null)
+                VideoFrameBuffer = new byte[sample.dataLength];
+            float[] matrix = null;
+            if (!File.Exists(Path.Combine(OutputDirectory, "proj.txt")))
+            {
+                if (sample.TryGetProjectionMatrix(out matrix) == false)
+                {
+                    return;
+                }
+                Matrix4x4 m = LocatableCameraUtils.ConvertFloatArrayToMatrix4x4(matrix);
+                Vector4 column2 = m.GetColumn(2);
+                column2.x = -column2.x;
+                column2.y = -column2.y;
+                m.SetColumn(2, column2);
+                float halfWidth = VideoResolution.width / 2f;
+                float halfHeight = VideoResolution.height / 2f;
+                float Fx = m.GetColumn(0).x * halfWidth;
+                float Fy = m.GetColumn(1).y * halfHeight;
+                float offsetX = m.GetColumn(2).x;
+                float offsetY = m.GetColumn(2).y;
+                float Cx = halfWidth + offsetX * halfWidth;
+                float Cy = halfHeight + offsetY * halfHeight;
+                Utilities.SaveFile(string.Format("{0} {1}\n{2} {3} {4} {5}", VideoResolution.width, VideoResolution.height, Fx, Fy, Cx, Cy),
+                    Path.Combine(OutputDirectory, "proj.txt"));
+            }
+            if (sample.TryGetCameraToWorldMatrix(out matrix) == false)
+            {
+                return;
+            }
+            sample.CopyRawImageDataIntoBuffer(VideoFrameBuffer);
+            for (int i = 0; i < 16; ++i)
+                VideoBinaryWriter.Write(matrix[i]);
+            VideoBinaryWriter.Write(VideoFrameBuffer);
+        }
+
+        #endregion
     }
 }
