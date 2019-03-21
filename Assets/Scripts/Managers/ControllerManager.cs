@@ -23,7 +23,7 @@ namespace STAR
 
         public HoloInfo Info;
         public GameObject Cursor;
-        public GameObject Fps; 
+        public GameObject Fps;
 
         private void Start()
         {
@@ -97,7 +97,7 @@ namespace STAR
         {
             Client?.Close();
             Client = client;
-            Client.MessageReceived += MessageReceived;
+            Client.OnMessageReceived += MessageReceived;
             Client.BeginRead();
             SendControl();
             SendLog();

@@ -36,6 +36,6 @@ namespace STAR
 
         public bool Valid { get; protected set; } = false;
 
-        public event OnChangeCallback<SE3Object> OnChange;
+        public event OnChangeHandler<SE3Object> OnChange;
     }
 }

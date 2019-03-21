@@ -9,8 +9,8 @@ namespace LCY
     public sealed class Configurations : Singleton<Configurations>
     {
         private volatile Dictionary<string, object> Configs = new Dictionary<string, object>();
-        public delegate void Callback();
-        public delegate void OnChangeCallback(dynamic v);
+        public delegate void Handler();
+        public delegate void OnChangeHandler(dynamic v);
         private Dictionary<string, Delegate> Events = new Dictionary<string, Delegate>();
 
         #region configs
@@ -100,12 +100,12 @@ namespace LCY
             NO,
         };
 
-        public void SetAndAddCallback(string key, object value, OnChangeCallback callback, RunOnMainThead runOnMainThread = RunOnMainThead.NO, WaitUntilDone waitUntilDone = WaitUntilDone.NO)
+        public void SetAndAddCallback(string key, object value, OnChangeHandler callback, RunOnMainThead runOnMainThread = RunOnMainThead.NO, WaitUntilDone waitUntilDone = WaitUntilDone.NO)
         {
             SetAndAddCallback(key, value, callback, CallNow.NO, runOnMainThread, waitUntilDone);
         }
 
-        public void SetAndAddCallback(string key, object value, OnChangeCallback callback, CallNow callNow, RunOnMainThead runOnMainThread = RunOnMainThead.NO, WaitUntilDone waitUntilDone = WaitUntilDone.NO)
+        public void SetAndAddCallback(string key, object value, OnChangeHandler callback, CallNow callNow, RunOnMainThead runOnMainThread = RunOnMainThead.NO, WaitUntilDone waitUntilDone = WaitUntilDone.NO)
         {
             if (callNow == CallNow.YES)
             {
@@ -119,7 +119,7 @@ namespace LCY
             }
         }
 
-        public void AddCallback(string key, Callback callback, RunOnMainThead runOnMainThread = RunOnMainThead.NO, WaitUntilDone waitUntilDone = WaitUntilDone.NO)
+        public void AddCallback(string key, Handler callback, RunOnMainThead runOnMainThread = RunOnMainThead.NO, WaitUntilDone waitUntilDone = WaitUntilDone.NO)
         {
             Set(key, null, null);
             Delegate del = runOnMainThread == RunOnMainThead.YES ? () => Utilities.InvokeMain(() => callback(), waitUntilDone == WaitUntilDone.YES ? true : false) : callback;
@@ -133,7 +133,7 @@ namespace LCY
             }
         }
 
-        public void AddCallback(string key, OnChangeCallback callback, RunOnMainThead runOnMainThread = RunOnMainThead.NO, WaitUntilDone waitUntilDone = WaitUntilDone.NO)
+        public void AddCallback(string key, OnChangeHandler callback, RunOnMainThead runOnMainThread = RunOnMainThead.NO, WaitUntilDone waitUntilDone = WaitUntilDone.NO)
         {
             Delegate del = runOnMainThread == RunOnMainThead.YES ? (dynamic v) => Utilities.InvokeMain(() => callback(v), waitUntilDone == WaitUntilDone.YES ? true : false) : callback;
             if (Events.ContainsKey(key))
@@ -146,7 +146,7 @@ namespace LCY
             }
         }
 
-        public void RemoveCallback(string key, OnChangeCallback callback)
+        public void RemoveCallback(string key, OnChangeHandler callback)
         {
             if (Events.ContainsKey(key))
             {

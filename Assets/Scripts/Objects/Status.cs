@@ -17,22 +17,23 @@ namespace STAR
 
         private void Update()
         {
-            Text.text = "Self: " + ConnectionManager.Instance.WebRTCStatus.ToString() + "\n" +
-                "Peer: " + (ConnectionManager.Instance.PeerName != null ? "Connected" : "NotConnected");
-            switch (ConnectionManager.Instance.WebRTCStatus)
+            WebRTCConnection conn = ConnectionManager.Instance["WebRTC"] as WebRTCConnection;
+            Text.text = "Self: " + conn.WebRTCStatus.ToString() + "\n" +
+                "Peer: " + (conn.PeerName != null ? "Connected" : "NotConnected");
+            switch (conn.WebRTCStatus)
             {
-                case ConnectionManager.Status.NotConnected:
+                case WebRTCConnection.Status.NotConnected:
                     Text.color = Color.red;
                     break;
-                case ConnectionManager.Status.Connecting:
-                case ConnectionManager.Status.Disconnecting:
-                case ConnectionManager.Status.Calling:
-                case ConnectionManager.Status.EndingCall:
+                case WebRTCConnection.Status.Connecting:
+                case WebRTCConnection.Status.Disconnecting:
+                case WebRTCConnection.Status.Calling:
+                case WebRTCConnection.Status.EndingCall:
                     Text.color = Color.yellow;
                     break;
-                case ConnectionManager.Status.Connected:
-                case ConnectionManager.Status.InCall:
-                    Text.color = ConnectionManager.Instance.PeerName != null ? Color.green : Color.yellow;
+                case WebRTCConnection.Status.Connected:
+                case WebRTCConnection.Status.InCall:
+                    Text.color = conn.PeerName != null ? Color.green : Color.yellow;
                     break;
             }
         }

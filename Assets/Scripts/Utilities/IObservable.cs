@@ -4,10 +4,10 @@ using UnityEngine;
 
 namespace STAR
 {
-    public delegate void OnChangeCallback<T>(T sender);
+    public delegate void OnChangeHandler<T>(T sender);
 
     public interface IObservable<T>
     {
-        event OnChangeCallback<T> OnChange;
+        event OnChangeHandler<T> OnChange;
     }
 }

@@ -47,26 +47,27 @@ public class FOVBillboard : MonoBehaviour
         {
             transform.SetPositionAndRotation(Camera.transform.position, Camera.transform.rotation);
         }
-        
-        switch (ConnectionManager.Instance.WebRTCStatus)
+
+        WebRTCConnection conn = ConnectionManager.Instance["WebRTC"] as WebRTCConnection;
+        switch (conn.WebRTCStatus)
         {
-            case ConnectionManager.Status.NotConnected:
+            case WebRTCConnection.Status.NotConnected:
                 Color = Color.red;
                 break;
-            case ConnectionManager.Status.Connecting:
-            case ConnectionManager.Status.Disconnecting:
-            case ConnectionManager.Status.Calling:
-            case ConnectionManager.Status.EndingCall:
+            case WebRTCConnection.Status.Connecting:
+            case WebRTCConnection.Status.Disconnecting:
+            case WebRTCConnection.Status.Calling:
+            case WebRTCConnection.Status.EndingCall:
                 Color = Color.yellow;
                 break;
-            case ConnectionManager.Status.Connected:
-            case ConnectionManager.Status.InCall:
-                Color = ConnectionManager.Instance.PeerName != null ? Color.green : Color.yellow;
+            case WebRTCConnection.Status.Connected:
+            case WebRTCConnection.Status.InCall:
+                Color = conn.PeerName != null ? Color.green : Color.yellow;
                 break;
         }
 
-        Text.text = "Self: " + ConnectionManager.Instance.WebRTCStatus.ToString() + "\n" +
-            "Peer: " + (ConnectionManager.Instance.PeerName != null ? "Connected" : "NotConnected");
+        Text.text = "Self: " + conn.WebRTCStatus.ToString() + "\n" +
+            "Peer: " + (conn.PeerName != null ? "Connected" : "NotConnected");
         Text.color = Color;
         FrameTopLeft.startColor = FrameTopLeft.endColor = Color;
         FrameTopRight.startColor = FrameTopRight.endColor = Color;

@@ -77,9 +77,11 @@ namespace STAR
             sb.Append("Camera: ").AppendLine(Utilities.FormatMatrix4x4(Camera.transform.localToWorldMatrix));
             sb.Append("HoloCamera: ").AppendLine(Utilities.FormatMatrix4x4(HololensCamera.transform.localToWorldMatrix));
             sb.Append("Room: ").AppendLine(Utilities.FormatMatrix4x4(Room.transform.localToWorldMatrix));
-            sb.Append("AnnotationServer: socket:").Append(ConnectionManager.Instance.SocketConnected ? "Connected" : "Connecting")
-                .Append(";webrtc:").Append(ConnectionManager.Instance.WebRTCStatus)
-                .AppendLine();
+            sb.Append("Connections:");
+            foreach (IConnection conn in ConnectionManager.Instance.Connections)
+            {
+                sb.Append(conn.Name).Append(":").Append(conn.Connected).AppendLine();
+            }
             sb.Append("Anno: ").AppendLine(Annotations?.ToString());
             StatusString = sb.ToString();
             StatusText.text = StatusString;

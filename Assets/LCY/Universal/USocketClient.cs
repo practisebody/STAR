@@ -27,10 +27,10 @@ namespace LCY
         public string Host { get; set; }
         public int Port { get; set; }
 
-        public delegate void OnReceived(string s);
-        public event OnReceived MessageReceived;
-        public delegate void OnDisconnect();
-        public event OnDisconnect Disconnected;
+        public delegate void MessageHandler(string s);
+        public event MessageHandler OnMessageReceived;
+        public delegate void DisconnectionHandler();
+        public event DisconnectionHandler OnDisconnected;
 
         public bool Persistent { get; set; } = false;
         public bool Connected { get; private set; }
@@ -121,7 +121,7 @@ namespace LCY
                     if (response == null)
                         break;
                     else
-                        MessageReceived?.Invoke(response);
+                        OnMessageReceived?.Invoke(response);
                 }
             }
             catch (Exception)
@@ -130,7 +130,7 @@ namespace LCY
             finally
             {
                 Connected = false;
-                Disconnected?.Invoke();
+                OnDisconnected?.Invoke();
                 if (Persistent)
                     Connect();
                 else
@@ -161,7 +161,7 @@ namespace LCY
                 {
                     try
                     {
-                        MessageReceived?.Invoke(incomingCommandJsonString);
+                        OnMessageReceived?.Invoke(incomingCommandJsonString);
                     }
                     catch (Exception e)
                     {
