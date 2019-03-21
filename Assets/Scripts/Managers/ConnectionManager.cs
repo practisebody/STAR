@@ -56,7 +56,7 @@ namespace STAR
                 }
                 else if (node["command"].Value == "REINIT_CAMERA")
                 {
-                    Configurations.Instance.Set("Stabilization_Init", null);
+                    Configurations.Instance.Set("*_StablizationInit", null);
                 }
                 else
                     AnnotationReceived(node);

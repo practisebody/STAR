@@ -14,8 +14,6 @@ public class FOVBillboard : MonoBehaviour
 
     protected GameObject FOVQuad;
     protected GameObject HoloInfo;
-    protected GameObject Status;
-    protected Text Text;
     protected GameObject Frame;
     protected LineRenderer FrameTopLeft;
     protected LineRenderer FrameTopRight;
@@ -26,8 +24,6 @@ public class FOVBillboard : MonoBehaviour
     {
         FOVQuad = transform.Find("FOV").gameObject;
         HoloInfo = transform.Find("Canvas/HoloInfo").gameObject;
-        Status = transform.Find("Canvas/Status").gameObject;
-        Text = Status.GetComponentInChildren<Text>();
         Frame = transform.Find("Frame").gameObject;
         FrameTopLeft = Frame.transform.Find("TopLeft").GetComponentInChildren<LineRenderer>();
         FrameTopRight = Frame.transform.Find("TopRight").GetComponentInChildren<LineRenderer>();
@@ -37,8 +33,14 @@ public class FOVBillboard : MonoBehaviour
         Configurations.Instance.SetAndAddCallback("Billboard_Following", Following, v => Following = v);
         Configurations.Instance.SetAndAddCallback("Billboard_ShowFOVQuad", false, v => FOVQuad.SetActive(v), Configurations.CallNow.YES, Configurations.RunOnMainThead.YES);
         Configurations.Instance.SetAndAddCallback("Billboard_ShowHoloInfo", false, v => HoloInfo.SetActive(v), Configurations.CallNow.YES, Configurations.RunOnMainThead.YES);
-        Configurations.Instance.SetAndAddCallback("Billboard_ShowStatus", false, v => Status.SetActive(v), Configurations.CallNow.YES, Configurations.RunOnMainThead.YES);
         Configurations.Instance.SetAndAddCallback("Billboard_Frame", true, v => Frame.SetActive(v), Configurations.CallNow.YES, Configurations.RunOnMainThead.YES);
+
+        Configurations.Instance.AddCallback("*_PrepareUI", () =>
+        {
+            Configurations.Instance.Set("Billboard_ShowFOVQuad", false);
+            Configurations.Instance.Set("Billboard_ShowHoloInfo", false);
+            Configurations.Instance.Set("Billboard_Frame", true);
+        });
     }
 
     private void Update()
@@ -49,26 +51,18 @@ public class FOVBillboard : MonoBehaviour
         }
 
         WebRTCConnection conn = ConnectionManager.Instance["WebRTC"] as WebRTCConnection;
-        switch (conn.WebRTCStatus)
+        switch (conn.Status)
         {
-            case WebRTCConnection.Status.NotConnected:
+            case WebRTCConnection.Statuses.NotConnected:
                 Color = Color.red;
                 break;
-            case WebRTCConnection.Status.Connecting:
-            case WebRTCConnection.Status.Disconnecting:
-            case WebRTCConnection.Status.Calling:
-            case WebRTCConnection.Status.EndingCall:
+            case WebRTCConnection.Statuses.Pending:
                 Color = Color.yellow;
                 break;
-            case WebRTCConnection.Status.Connected:
-            case WebRTCConnection.Status.InCall:
-                Color = conn.PeerName != null ? Color.green : Color.yellow;
+            case WebRTCConnection.Statuses.Connected:
+                Color = Color.green;
                 break;
         }
-
-        Text.text = "Self: " + conn.WebRTCStatus.ToString() + "\n" +
-            "Peer: " + (conn.PeerName != null ? "Connected" : "NotConnected");
-        Text.color = Color;
         FrameTopLeft.startColor = FrameTopLeft.endColor = Color;
         FrameTopRight.startColor = FrameTopRight.endColor = Color;
         FrameBottomRight.startColor = FrameBottomRight.endColor = Color;

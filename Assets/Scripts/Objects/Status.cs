@@ -1,4 +1,5 @@
-﻿using STAR;
+﻿using LCY;
+using STAR;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -8,33 +9,64 @@ namespace STAR
 {
     public class Status : MonoBehaviour
     {
-        protected Text Text;
+        public enum Modes
+        {
+            DEBUG,
+            RUN,
+        };
+
+        protected Text TopLeft;
+        protected Text TopRight;
+        protected Text BottomLeft;
+        protected Text BottomRight;
+
+        public Modes Mode { get; private set; }
 
         private void Start()
         {
-            Text = GetComponentInChildren<Text>();
+            TopLeft = transform.Find("TopLeft").GetComponent<Text>();
+            TopRight = transform.Find("TopRight").GetComponent<Text>();
+            BottomLeft = transform.Find("BottomLeft").GetComponent<Text>();
+            BottomRight = transform.Find("BottomRight").GetComponent<Text>();
+
+            Configurations.Instance.SetAndAddCallback("Billboard_StatusDebugMode", true, v =>
+            {
+                Mode = v ? Modes.DEBUG : Mode = Modes.RUN;
+                TopLeft.text = string.Empty;
+                TopRight.text = string.Empty;
+                BottomLeft.text = string.Empty;
+                BottomRight.text = string.Empty;
+            }, Configurations.CallNow.YES, Configurations.RunOnMainThead.YES);
+            Configurations.Instance.AddCallback("*_PrepareUI", () => Configurations.Instance.Set("Billboard_StatusDebugMode", false));
         }
 
         private void Update()
         {
-            WebRTCConnection conn = ConnectionManager.Instance["WebRTC"] as WebRTCConnection;
-            Text.text = "Self: " + conn.WebRTCStatus.ToString() + "\n" +
-                "Peer: " + (conn.PeerName != null ? "Connected" : "NotConnected");
-            switch (conn.WebRTCStatus)
+            if (Mode == Modes.DEBUG)
             {
-                case WebRTCConnection.Status.NotConnected:
-                    Text.color = Color.red;
-                    break;
-                case WebRTCConnection.Status.Connecting:
-                case WebRTCConnection.Status.Disconnecting:
-                case WebRTCConnection.Status.Calling:
-                case WebRTCConnection.Status.EndingCall:
-                    Text.color = Color.yellow;
-                    break;
-                case WebRTCConnection.Status.Connected:
-                case WebRTCConnection.Status.InCall:
-                    Text.color = conn.PeerName != null ? Color.green : Color.yellow;
-                    break;
+                // TopLeft, WebRTC Status
+                WebRTCConnection conn = ConnectionManager.Instance["WebRTC"] as WebRTCConnection;
+                TopLeft.text = "Self: " + conn.WebRTCStatus.ToString() + "\n" +
+                    "Peer: " + (conn.PeerName ?? "NotConnected");
+                switch (conn.Status)
+                {
+                    case WebRTCConnection.Statuses.NotConnected:
+                        TopLeft.color = Color.red;
+                        break;
+                    case WebRTCConnection.Statuses.Pending:
+                        TopLeft.color = Color.yellow;
+                        break;
+                    case WebRTCConnection.Statuses.Connected:
+                        TopLeft.color = Color.green;
+                        break;
+                }
+
+                // TopRight, IP address
+                string ip = Utilities.GetIPAddress();
+                if (ip != null)
+                    TopRight.text = Utilities.GetIPAddress();
+                TopRight.color = ip == null ? Color.red : Color.green;
+
             }
         }
     }

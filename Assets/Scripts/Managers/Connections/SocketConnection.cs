@@ -30,9 +30,11 @@ namespace STAR
 
         public void Start()
         {
-            Client = new USocketClient(Hostname, Port);
-            Client.Persistent = true;
-            Client.Timeout = 1000;
+            Client = new USocketClient(Hostname, Port)
+            {
+                Persistent = true,
+                Timeout = 1000
+            };
             Configurations.Instance.SetAndAddCallback("ConnectionSocket_IP", Hostname, v => Client.Host = v);
             Configurations.Instance.SetAndAddCallback("ConnectionSocket_Port", Port, v => Client.Port = v);
             Configurations.Instance.SetAndAddCallback("ConnectionSocket_Connect", false, v =>

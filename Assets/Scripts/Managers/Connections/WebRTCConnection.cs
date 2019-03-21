@@ -19,7 +19,14 @@ namespace STAR
 {
     class WebRTCConnection : IConnection
     {
-        public enum Status
+        public enum Statuses
+        {
+            NotConnected,
+            Pending,
+            Connected,
+        }
+        
+        public enum WebRTCStatuses
         {
             NotConnected,
             Connecting,
@@ -49,11 +56,32 @@ namespace STAR
         }
 
         public string Name => "WebRTC";
-        public bool Connected => WebRTCStatus == Status.Connected;
+        public bool Connected => WebRTCStatus == WebRTCStatuses.Connected;
 
         public event MessageHandler OnMessageReceived;
 
-        public Status WebRTCStatus { get; private set; } = Status.NotConnected;
+        public Statuses Status
+        {
+            get
+            {
+                switch (WebRTCStatus)
+                {
+                    case WebRTCStatuses.NotConnected:
+                        return Statuses.NotConnected;
+                    case WebRTCStatuses.Connecting:
+                    case WebRTCStatuses.Disconnecting:
+                    case WebRTCStatuses.Calling:
+                    case WebRTCStatuses.EndingCall:
+                        return Statuses.Pending;
+                    case WebRTCStatuses.Connected:
+                    case WebRTCStatuses.InCall:
+                        return PeerName == null ? Statuses.Pending : Statuses.Connected;
+                    default:
+                        throw new NotImplementedException();
+                }
+            }
+        }
+        public WebRTCStatuses WebRTCStatus { get; set; } = WebRTCStatuses.NotConnected;
 
         // parameters
         protected string ServerAddress = "https://purduestarproj-webrtc-signal.herokuapp.com";
@@ -79,36 +107,35 @@ namespace STAR
 
             Conductor.Instance.IncomingRawMessage += Conductor_IncomingRawMessage;
             Conductor.Instance.OnSelfRawFrame += Conductor_OnSelfRawFrame;
-            //Conductor.Instance.OnPeerRawFrame += Conductor_OnPeerRawFrame;
 
             Conductor.Instance.Initialized += Conductor_Initialized;
             Conductor.Instance.Initialize(CoreApplication.MainView.CoreWindow.Dispatcher);
             Conductor.Instance.EnableLogging(Conductor.LogLevel.Verbose);
             Debug.Log("done setting up the rest of the conductor");
 
-            Configurations.Instance.AddCallback("ConnectionWebRTC_Connect", () =>
+            Configurations.Instance.AddCallback("*_Connect", () =>
             {
-                if (WebRTCStatus == Status.NotConnected)
+                if (WebRTCStatus == WebRTCStatuses.NotConnected)
                 {
                     new Task(() =>
                     {
                         Conductor.Instance.StartLogin(ServerAddress, ServerPort, ClientName);
                     }).Start();
-                    WebRTCStatus = Status.Connecting;
+                    WebRTCStatus = WebRTCStatuses.Connecting;
                 }
-                else if (WebRTCStatus == Status.Connected)
+                else if (WebRTCStatus == WebRTCStatuses.Connected)
                 {
                     new Task(() =>
                     {
                         var task = Conductor.Instance.DisconnectFromServer();
                     }).Start();
 
-                    WebRTCStatus = Status.Disconnecting;
+                    WebRTCStatus = WebRTCStatuses.Disconnecting;
                 }
             });
-            Configurations.Instance.AddCallback("ConnectionWebRTC_Call", () =>
+            Configurations.Instance.AddCallback("*_Call", () =>
             {
-                if (WebRTCStatus == Status.Connected && PeerName != null)
+                if (WebRTCStatus == WebRTCStatuses.Connected && PeerName != null)
                 {
                     new Task(() =>
                     {
@@ -131,15 +158,15 @@ namespace STAR
                             Conductor.Instance.ConnectToPeer(selectedConductorPeer);
                         }
                     }).Start();
-                    WebRTCStatus = Status.Calling;
+                    WebRTCStatus = WebRTCStatuses.Calling;
                 }
-                else if (WebRTCStatus == Status.InCall)
+                else if (WebRTCStatus == WebRTCStatuses.InCall)
                 {
                     new Task(() =>
                     {
                         var task = Conductor.Instance.DisconnectFromPeer();
                     }).Start();
-                    WebRTCStatus = Status.EndingCall;
+                    WebRTCStatus = WebRTCStatuses.EndingCall;
                 }
             });
 #endif
@@ -147,7 +174,7 @@ namespace STAR
             {
                 if (VideoPose = v)
                 {
-                    VideoFrames = File.Create(Utilities.FullPath(DateTime.Now.ToString("yyMMdd_HHmmss") + ".txt"));
+                    VideoFrames = File.Create(Utilities.FullPath(Utilities.TimeNow() + ".txt"));
                     VideoBinaryWriter = new BinaryWriter(VideoFrames);
                 }
                 else
@@ -190,6 +217,10 @@ namespace STAR
                         string remotePeerName = command.remotePeer.Name;
                         RemoveRemotePeer(remotePeerName);
                     }
+                    else if (command.type == CommandType.SetInCall)
+                    {
+                        Configurations.Instance.Invoke("*_PrepareUI");
+                    }
                 }
 #endif
             }
@@ -215,25 +246,21 @@ namespace STAR
             PeerName = null;
         }
 
-        public Camera Camera;
-
         // fired whenever we encode one of our own video frames before sending it to the remote peer.
         // if there is pose data, posXYZ and rotXYZW will have non-zero values.
         protected void Conductor_OnSelfRawFrame(uint width, uint height,
             byte[] yPlane, uint yPitch, byte[] vPlane, uint vPitch, byte[] uPlane, uint uPitch,
             float posX, float posY, float posZ, float rotX, float rotY, float rotZ, float rotW)
         {
-            LCY.Utilities.InvokeMain(() =>
+            if (VideoPose)
             {
-                if (VideoPose)
+                LCY.Utilities.InvokeMain(() =>
                 {
-                    SE3 m = SE3.ConvertHoloLensPoseToSE3(new Vector3(posX, posY, posZ), new Quaternion(rotX, rotY, rotZ, rotW));
-                    Matrix4x4 m_ = Camera.transform.localToWorldMatrix;
-
+                    Matrix4x4 m = HololensCamera.TheCamera.transform.localToWorldMatrix;
                     for (int i = 0; i < 16; ++i)
-                        VideoBinaryWriter.Write(m_[i]);
-                }
-            }, true);
+                        VideoBinaryWriter.Write(m[i]);
+                }, true);
+            }
         }
 
         protected void Conductor_IncomingRawMessage(string rawMessageString)
@@ -296,9 +323,9 @@ namespace STAR
                 {
                     lock (this)
                     {
-                        if (WebRTCStatus == Status.Connecting)
+                        if (WebRTCStatus == WebRTCStatuses.Connecting)
                         {
-                            WebRTCStatus = Status.Connected;
+                            WebRTCStatus = WebRTCStatuses.Connected;
                             commandQueue.Add(new Command { type = CommandType.SetConnected });
                         }
                         else
@@ -316,9 +343,9 @@ namespace STAR
                 {
                     lock (this)
                     {
-                        if (WebRTCStatus == Status.Connecting)
+                        if (WebRTCStatus == WebRTCStatuses.Connecting)
                         {
-                            WebRTCStatus = Status.NotConnected;
+                            WebRTCStatus = WebRTCStatuses.NotConnected;
                             commandQueue.Add(new Command { type = CommandType.SetNotConnected });
                         }
                         else
@@ -336,9 +363,9 @@ namespace STAR
                 {
                     lock (this)
                     {
-                        if (WebRTCStatus == Status.Disconnecting)
+                        if (WebRTCStatus == WebRTCStatuses.Disconnecting)
                         {
-                            WebRTCStatus = Status.NotConnected;
+                            WebRTCStatus = WebRTCStatuses.NotConnected;
                             commandQueue.Add(new Command { type = CommandType.SetNotConnected });
                         }
                         else
@@ -360,14 +387,14 @@ namespace STAR
                 {
                     lock (this)
                     {
-                        if (WebRTCStatus == Status.Calling)
+                        if (WebRTCStatus == WebRTCStatuses.Calling)
                         {
-                            WebRTCStatus = Status.InCall;
+                            WebRTCStatus = WebRTCStatuses.InCall;
                             commandQueue.Add(new Command { type = CommandType.SetInCall });
                         }
-                        else if (WebRTCStatus == Status.Connected)
+                        else if (WebRTCStatus == WebRTCStatuses.Connected)
                         {
-                            WebRTCStatus = Status.InCall;
+                            WebRTCStatus = WebRTCStatuses.InCall;
                             commandQueue.Add(new Command { type = CommandType.SetInCall });
                         }
                         else
@@ -385,18 +412,18 @@ namespace STAR
                 {
                     lock (this)
                     {
-                        if (WebRTCStatus == Status.EndingCall)
+                        if (WebRTCStatus == WebRTCStatuses.EndingCall)
                         {
                             Plugin.UnloadLocalMediaStreamSource();
                             Plugin.UnloadRemoteMediaStreamSource();
-                            WebRTCStatus = Status.Connected;
+                            WebRTCStatus = WebRTCStatuses.Connected;
                             commandQueue.Add(new Command { type = CommandType.SetConnected });
                         }
-                        else if (WebRTCStatus == Status.InCall)
+                        else if (WebRTCStatus == WebRTCStatuses.InCall)
                         {
                             Plugin.UnloadLocalMediaStreamSource();
                             Plugin.UnloadRemoteMediaStreamSource();
-                            WebRTCStatus = Status.Connected;
+                            WebRTCStatus = WebRTCStatuses.Connected;
                             commandQueue.Add(new Command { type = CommandType.SetConnected });
                         }
                         else
@@ -410,12 +437,14 @@ namespace STAR
             // Ready to connect to the server event handler
             Conductor.Instance.OnReadyToConnect += () => { var task = RunOnUiThread(() => { }); };
 
-            List<Conductor.IceServer> iceServers = new List<Conductor.IceServer>();
-            iceServers.Add(new Conductor.IceServer { Host = "stun.l.google.com:19302", Type = Conductor.IceServer.ServerType.STUN });
-            iceServers.Add(new Conductor.IceServer { Host = "stun1.l.google.com:19302", Type = Conductor.IceServer.ServerType.STUN });
-            iceServers.Add(new Conductor.IceServer { Host = "stun2.l.google.com:19302", Type = Conductor.IceServer.ServerType.STUN });
-            iceServers.Add(new Conductor.IceServer { Host = "stun3.l.google.com:19302", Type = Conductor.IceServer.ServerType.STUN });
-            iceServers.Add(new Conductor.IceServer { Host = "stun4.l.google.com:19302", Type = Conductor.IceServer.ServerType.STUN });
+            List<Conductor.IceServer> iceServers = new List<Conductor.IceServer>
+            {
+                new Conductor.IceServer { Host = "stun.l.google.com:19302", Type = Conductor.IceServer.ServerType.STUN },
+                new Conductor.IceServer { Host = "stun1.l.google.com:19302", Type = Conductor.IceServer.ServerType.STUN },
+                new Conductor.IceServer { Host = "stun2.l.google.com:19302", Type = Conductor.IceServer.ServerType.STUN },
+                new Conductor.IceServer { Host = "stun3.l.google.com:19302", Type = Conductor.IceServer.ServerType.STUN },
+                new Conductor.IceServer { Host = "stun4.l.google.com:19302", Type = Conductor.IceServer.ServerType.STUN }
+            };
             Conductor.IceServer turnServer = new Conductor.IceServer { Host = "turnserver3dstreaming.centralus.cloudapp.azure.com:5349", Type = Conductor.IceServer.ServerType.TURN };
             turnServer.Credential = "3Dtoolkit072017";
             turnServer.Username = "user";
@@ -472,7 +501,7 @@ namespace STAR
             {
                 lock (this)
                 {
-                    if (WebRTCStatus == Status.InCall)
+                    if (WebRTCStatus == WebRTCStatuses.InCall)
                     {
                         IMediaSource source;
                         if (Conductor.Instance.VideoCodec.Name == "H264")
@@ -481,7 +510,7 @@ namespace STAR
                             source = Conductor.Instance.CreateRemoteMediaStreamSource("I420");
                         Plugin.LoadRemoteMediaStreamSource((MediaStreamSource)source);
                     }
-                    else if (WebRTCStatus == Status.Connected)
+                    else if (WebRTCStatus == WebRTCStatuses.Connected)
                     {
                         IMediaSource source;
                         if (Conductor.Instance.VideoCodec.Name == "H264")
@@ -506,10 +535,10 @@ namespace STAR
             {
                 lock (this)
                 {
-                    if (WebRTCStatus == Status.InCall)
+                    if (WebRTCStatus == WebRTCStatuses.InCall)
                     {
                     }
-                    else if (WebRTCStatus == Status.Connected)
+                    else if (WebRTCStatus == WebRTCStatuses.Connected)
                     {
                     }
                     else
@@ -528,7 +557,7 @@ namespace STAR
             {
                 lock (this)
                 {
-                    if (WebRTCStatus == Status.InCall)
+                    if (WebRTCStatus == WebRTCStatuses.InCall)
                     {
                         var source = Conductor.Instance.CreateLocalMediaStreamSource("I420");
                         Plugin.LoadLocalMediaStreamSource((MediaStreamSource)source);
@@ -536,7 +565,7 @@ namespace STAR
                         Conductor.Instance.EnableLocalVideoStream();
                         Conductor.Instance.UnmuteMicrophone();
                     }
-                    else if (WebRTCStatus == Status.Connected)
+                    else if (WebRTCStatus == WebRTCStatuses.Connected)
                     {
                         var source = Conductor.Instance.CreateLocalMediaStreamSource("I420");
                         Plugin.LoadLocalMediaStreamSource((MediaStreamSource)source);

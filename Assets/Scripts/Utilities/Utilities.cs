@@ -18,9 +18,6 @@ namespace STAR
 {
     static public class Utilities
     {
-        // TODO(chengyuanlin)
-        // move to LCY?
-
         public static string GetIPAddress()
         {
 #if NETFX_CORE
@@ -33,6 +30,12 @@ namespace STAR
             return string.Empty;
 #endif
         }
+
+        public static string TimeNow()
+        {
+            return DateTime.Now.ToString("yyMMdd_HHmmss");
+        }
+
         // Unity
         public static string FolderName
         {

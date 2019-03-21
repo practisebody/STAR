@@ -74,6 +74,12 @@ namespace STAR
                 v => { AnnotationZOffset = v; Refresh(); }, Configurations.RunOnMainThead.YES);
             Configurations.Instance.AddCallback("Annotation_RemoveAll",
                 () => { _Annotations.Clear(); Refresh(); }, Configurations.RunOnMainThead.YES);
+
+            Configurations.Instance.AddCallback("*_PrepareUI", () =>
+            {
+                Configurations.Instance.Set("Visual_AnnotationRays", false);
+                Configurations.Instance.Set("Visual_AnnotationCameraRays", false);
+            });
         }
 
         #region spatial mapping

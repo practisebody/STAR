@@ -107,21 +107,18 @@ namespace LCY
 
         public void SetAndAddCallback(string key, object value, OnChangeHandler callback, CallNow callNow, RunOnMainThead runOnMainThread = RunOnMainThead.NO, WaitUntilDone waitUntilDone = WaitUntilDone.NO)
         {
+            Set(key, value);
+            AddCallback(key, callback, runOnMainThread, waitUntilDone);
             if (callNow == CallNow.YES)
             {
-                AddCallback(key, callback, runOnMainThread, waitUntilDone);
-                Set(key, value);
-            }
-            else
-            {
-                Set(key, value);
-                AddCallback(key, callback, runOnMainThread, waitUntilDone);
+                Invoke(key);
             }
         }
 
         public void AddCallback(string key, Handler callback, RunOnMainThead runOnMainThread = RunOnMainThead.NO, WaitUntilDone waitUntilDone = WaitUntilDone.NO)
         {
-            Set(key, null, null);
+            if (Contains(key) == false)
+                Configs[key] = null;
             Delegate del = runOnMainThread == RunOnMainThead.YES ? () => Utilities.InvokeMain(() => callback(), waitUntilDone == WaitUntilDone.YES ? true : false) : callback;
             if (Events.ContainsKey(key))
             {
@@ -135,6 +132,8 @@ namespace LCY
 
         public void AddCallback(string key, OnChangeHandler callback, RunOnMainThead runOnMainThread = RunOnMainThead.NO, WaitUntilDone waitUntilDone = WaitUntilDone.NO)
         {
+            if (Contains(key) == false)
+                Configs[key] = null;
             Delegate del = runOnMainThread == RunOnMainThead.YES ? (dynamic v) => Utilities.InvokeMain(() => callback(v), waitUntilDone == WaitUntilDone.YES ? true : false) : callback;
             if (Events.ContainsKey(key))
             {
@@ -174,14 +173,14 @@ namespace LCY
                 Delegate del;
                 if (Events.TryGetValue(key, out del))
                 {
-                    del.DynamicInvoke(key);
+                    del.DynamicInvoke(Get(key));
                 }
             }
         }
 
         public void Invoke(string key)
         {
-            Events[key].DynamicInvoke(Configs[key]);
+            Events[key].DynamicInvoke(Get(key));
         }
 
         #endregion

@@ -66,8 +66,12 @@ namespace STAR
         protected Matrix4x4 CameraToWorldMatrix;
         protected Matrix4x4 ProjectionMatrix;
 
+        static public Camera TheCamera;
+
         HololensCamera()
         {
+            TheCamera = Camera;
+            
             Width = 1344;
             Height = 756;
             Fx = 1037.806f;
@@ -82,20 +86,25 @@ namespace STAR
             HololensCameraRays = transform.Find("Rays");
 
             Configurations.Instance.SetAndAddCallback("Visual_HololensCamera", false, v => gameObject.SetActive(v), Configurations.CallNow.YES, Configurations.RunOnMainThead.YES);
-            Configurations.Instance.AddCallback("Stabilization_Init", () =>
+            Configurations.Instance.AddCallback("*_StablizationInit", () =>
             {
-                // prepare initialization message
-                JObject message = new JObject();
-                message["type"] = "I";
-                message["camera"] = new JObject();
-                message["camera"]["width"] = Width;
-                message["camera"]["height"] = Height;
-                message["camera"]["fx"] = Fx;
-                message["camera"]["fy"] = Fy;
-                message["camera"]["cx"] = Cx;
-                message["camera"]["cy"] = Cy;
-
+                Matrix4x4 c = Camera.transform.localToWorldMatrix;
+#if NETFX_CORE
                 Matrix4x4 p = Room.transform.localToWorldMatrix;
+                // prepare initialization message
+                JObject message = new JObject
+                {
+                    ["type"] = "I",
+                    ["camera"] = new JObject
+                    {
+                        ["width"] = Width,
+                        ["height"] = Height,
+                        ["fx"] = Fx,
+                        ["fy"] = Fy,
+                        ["cx"] = Cx,
+                        ["cy"] = Cy
+                    }
+                };
                 message["plane"] = new JArray(new float[]
                 {
                     p.m00, p.m01, p.m02, p.m03,
@@ -103,7 +112,6 @@ namespace STAR
                     p.m20, p.m21, p.m22, p.m23,
                     p.m30, p.m31, p.m32, p.m33
                 });
-                Matrix4x4 c = Camera.transform.localToWorldMatrix;
                 message["cameraMatrix"] = new JArray(new float[]
                 {
                     c.m00, c.m01, c.m02, c.m03,
@@ -111,12 +119,11 @@ namespace STAR
                     c.m20, c.m21, c.m22, c.m23,
                     c.m30, c.m31, c.m32, c.m33
                 });
-
-                JObject container = new JObject();
-                container["message"] = message;
+                JObject container = new JObject
+                {
+                    ["message"] = message
+                };
                 string jsonString = container.ToString();
-
-#if NETFX_CORE
                 Conductor.Instance.SendMessage(Windows.Data.Json.JsonObject.Parse(jsonString));
 #endif
 
@@ -143,30 +150,34 @@ namespace STAR
 
                 ExtrinsicValid = true;
             }, Configurations.RunOnMainThead.YES);
-            Configurations.Instance.AddCallback("Stabilization_Update", () =>
+            Configurations.Instance.AddCallback("Stabilization_DebugUpdate", () =>
             {
-                // prepare initialization message
-                JObject message = new JObject();
-                message["type"] = "U";
-
                 Matrix4x4 c = Camera.transform.localToWorldMatrix;
-                message["cameraMatrix"] = new JArray(new float[]
+#if NETFX_CORE
+                // prepare initialization message
+                JObject message = new JObject
+                {
+                    ["type"] = "U",
+                    ["cameraMatrix"] = new JArray(new float[]
                 {
                     c.m00, c.m01, c.m02, c.m03,
                     c.m10, c.m11, c.m12, c.m13,
                     c.m20, c.m21, c.m22, c.m23,
                     c.m30, c.m31, c.m32, c.m33
-                });
+                })
+                };
 
-                JObject container = new JObject();
-                container["message"] = message;
+                JObject container = new JObject
+                {
+                    ["message"] = message
+                };
                 string jsonString = container.ToString();
-
-#if NETFX_CORE
                 Conductor.Instance.SendMessage(Windows.Data.Json.JsonObject.Parse(jsonString));
 #endif
                 localToWorldMatrix = c;
             }, Configurations.RunOnMainThead.YES);
+
+            Configurations.Instance.AddCallback("*_PrepareUI", () => Configurations.Instance.Set("Visual_HololensCamera", false));
 
             VideoStart();
         }
@@ -177,18 +188,18 @@ namespace STAR
         protected byte[] VideoFrameBuffer;
         protected FileStream VideoFrames;
         protected BinaryWriter VideoBinaryWriter;
-        protected string OutputDirectory { get; } = DateTime.Now.ToString("yyMMddHHmmss");
+        protected string OutputDirectory;
 
         protected void VideoStart()
         {
-            Utilities.CreateFolder(OutputDirectory);
-
             UVideoCapture.Instance.GetVideoCaptureAsync(OnVideoCreated);
             UVideoCapture.Instance.FrameSampleAcquired += OnFrameCaptured;
             Configurations.Instance.SetAndAddCallback("Utilities_Record", false, v =>
             {
                 if (v)
                 {
+                    OutputDirectory = Utilities.TimeNow();
+                    Utilities.CreateFolder(OutputDirectory);
                     VideoFrames = File.Create(Utilities.FullPath(Path.Combine(OutputDirectory, "frames.raw")));
                     VideoBinaryWriter = new BinaryWriter(VideoFrames);
                     UVideoCapture.Instance.StartCamera();
@@ -223,7 +234,7 @@ namespace STAR
             if (VideoFrameBuffer == null)
                 VideoFrameBuffer = new byte[sample.dataLength];
             float[] matrix = null;
-            if (!File.Exists(Path.Combine(OutputDirectory, "proj.txt")))
+            if (File.Exists(Path.Combine(OutputDirectory, "proj.txt")) == false)
             {
                 if (sample.TryGetProjectionMatrix(out matrix) == false)
                 {

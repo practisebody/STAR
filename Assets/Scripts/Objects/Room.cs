@@ -33,7 +33,7 @@ namespace STAR
                 v => transform.position = new Vector3(PlaneX, PlaneY, PlaneZ = v), Configurations.RunOnMainThead.YES);
             Configurations.Instance.AddCallback("Stabilization_Detect", SurfaceMeshesToPlanes.Instance.MakePlanes, Configurations.RunOnMainThead.YES);
             SurfaceMeshesToPlanes.Instance.MakePlanesComplete += SurfaceMeshesToPlanes_MakePlanesComplete;
-            Configurations.Instance.SetAndAddCallback("Stabilization_Detect_Offset", PlaneDetectOffset, v =>
+            Configurations.Instance.SetAndAddCallback("Stabilization_DetectOffset", PlaneDetectOffset, v =>
             {
                 PlaneDetectOffset = v;
                 Configurations.Instance.Set("Stabilization_PlaneY", SurfaceMeshesToPlanes.Instance.FloorYPosition + PlaneDetectOffset);

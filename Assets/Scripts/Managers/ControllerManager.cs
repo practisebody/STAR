@@ -28,7 +28,7 @@ namespace STAR
         private void Start()
         {
 #if NETFX_CORE
-            Sender(buffer);
+            Task.Run(() => Sender(buffer));
 #endif
             Configurations.Instance.SetAndAddCallback("SpatialMap_Show", false, v => SpatialMappingManager.Instance.DrawVisualMeshes = v, Configurations.CallNow.YES, Configurations.RunOnMainThead.YES);
             Configurations.Instance.SetAndAddCallback("SpatialMap_Update", true, v =>
@@ -40,6 +40,14 @@ namespace STAR
             }, Configurations.RunOnMainThead.YES);
             Configurations.Instance.SetAndAddCallback("Visual_Cursor", false, v => Cursor.SetActive(v), Configurations.CallNow.YES, Configurations.RunOnMainThead.YES);
             Configurations.Instance.SetAndAddCallback("Visual_FPSCounter", false, v => Fps.SetActive(v), Configurations.CallNow.YES, Configurations.RunOnMainThead.YES);
+
+            Configurations.Instance.AddCallback("*_PrepareUI", () =>
+            {
+                Configurations.Instance.Set("SpatialMap_Show", false);
+                Configurations.Instance.Set("SpatialMap_Update", false);
+                Configurations.Instance.Set("Visual_Cursor", false);
+                Configurations.Instance.Set("Visual_FPSCounter", false);
+            });
 
             Server = new USocketServer(Port);
             Server.ConnectionReceived += ConnectionReceived;
@@ -112,7 +120,7 @@ namespace STAR
                 JSONClass json = JSON.Parse(s).AsObject;
                 foreach (string key in json.Keys)
                 {
-                    Configurations.Instance.Set(key, json[key].Value);
+                    Configurations.Instance[key] = json[key].Value;
                 }
             }
             catch (Exception)
