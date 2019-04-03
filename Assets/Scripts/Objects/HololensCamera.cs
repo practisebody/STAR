@@ -124,7 +124,7 @@ namespace STAR
                     ["message"] = message
                 };
                 string jsonString = container.ToString();
-                Conductor.Instance.SendMessage(Windows.Data.Json.JsonObject.Parse(jsonString));
+                Conductor.Instance.SendMessage(WebRTCConnection.MentorName, Windows.Data.Json.JsonObject.Parse(jsonString));
 #endif
 
                 // local visualization
@@ -172,7 +172,7 @@ namespace STAR
                     ["message"] = message
                 };
                 string jsonString = container.ToString();
-                Conductor.Instance.SendMessage(Windows.Data.Json.JsonObject.Parse(jsonString));
+                Conductor.Instance.SendMessage(WebRTCConnection.MentorName, Windows.Data.Json.JsonObject.Parse(jsonString));
 #endif
                 localToWorldMatrix = c;
             }, Configurations.RunOnMainThead.YES);

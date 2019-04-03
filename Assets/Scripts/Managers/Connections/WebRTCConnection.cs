@@ -86,11 +86,18 @@ namespace STAR
         // parameters
         protected string ServerAddress = "https://purduestarproj-webrtc-signal.herokuapp.com";
         protected string ServerPort = "443";
-        protected string ClientName = "star-trainee"; // star-trainee, star-mentor, etc
+        public const string ClientName = "star-trainee"; // star-trainee, star-mentor, etc
+        public const string MentorName = "star-mentor";
         protected string PreferredVideoCodec = "VP8";
+        protected uint VideoWidth = 896;
+        protected uint VideoHeight = 504;
+        protected uint VideoFrameRate = 30;
+        protected bool AROverlay = false;
 
         protected List<Command> commandQueue = new List<Command>();
         public string PeerName { get; protected set; } = null;
+
+        protected Dictionary<string, uint> SourceIDs = new Dictionary<string, uint> { { MentorName, 0 }, { ClientName, 1 } };
 
         // video saver
         protected bool VideoPose = false;
@@ -146,7 +153,7 @@ namespace STAR
                         var conductorPeers = Conductor.Instance.GetPeers();
                         foreach (var conductorPeer in conductorPeers)
                         {
-                            if (conductorPeer.Name != ClientName)
+                            if (conductorPeer.Name == MentorName)
                             {
                                 selectedConductorPeer = conductorPeer;
                                 break;
@@ -164,13 +171,21 @@ namespace STAR
                 {
                     new Task(() =>
                     {
-                        var task = Conductor.Instance.DisconnectFromPeer();
+                        var task = Conductor.Instance.DisconnectFromPeer(MentorName);
                     }).Start();
                     WebRTCStatus = WebRTCStatuses.EndingCall;
                 }
             });
 #endif
-            Configurations.Instance.SetAndAddCallback("Stabilization_SavePose", VideoPose, (v) =>
+            Configurations.Instance.SetAndAddCallback("ConnectionWebRTC_AROverlay", AROverlay,
+                v => { AROverlay = v; UpdatePreferredFrameFormat(); });
+            Configurations.Instance.SetAndAddCallback("ConnectionWebRTC_VideoWidth", VideoWidth,
+                v => { VideoWidth = v; UpdatePreferredFrameFormat(); });
+            Configurations.Instance.SetAndAddCallback("ConnectionWebRTC_VideoHeight", VideoHeight,
+                v => { VideoHeight = v; UpdatePreferredFrameFormat(); });
+            Configurations.Instance.SetAndAddCallback("ConnectionWebRTC_VideoFrameRate", VideoFrameRate,
+                v => { VideoFrameRate = v; UpdatePreferredFrameFormat(); });
+            Configurations.Instance.SetAndAddCallback("Stabilization_SavePose", VideoPose, v =>
             {
                 if (VideoPose = v)
                 {
@@ -263,9 +278,9 @@ namespace STAR
             }
         }
 
-        protected void Conductor_IncomingRawMessage(string rawMessageString)
+        protected void Conductor_IncomingRawMessage(string peerName, string rawMessageString)
         {
-            Debug.Log("incoming raw message from peer: " + rawMessageString);
+            Debug.Log("incoming raw message from peer " + peerName + ": " + rawMessageString);
             OnMessageReceived(rawMessageString);
         }
 
@@ -381,7 +396,7 @@ namespace STAR
             Conductor.Instance.OnAddLocalStream += Conductor_OnAddLocalStream;
 
             // Connected to a peer event handler
-            Conductor.Instance.OnPeerConnectionCreated += () =>
+            Conductor.Instance.OnPeerConnectionCreated += peerName =>
             {
                 var task = RunOnUiThread(() =>
                 {
@@ -406,23 +421,26 @@ namespace STAR
             };
 
             // Connection between the current user and a peer is closed event handler
-            Conductor.Instance.OnPeerConnectionClosed += () =>
+            Conductor.Instance.OnPeerConnectionClosed += peerName =>
             {
+                var localId = SourceIDs[ClientName];
+                var remoteId = SourceIDs[MentorName];
+
                 var task = RunOnUiThread(() =>
                 {
                     lock (this)
                     {
                         if (WebRTCStatus == WebRTCStatuses.EndingCall)
                         {
-                            Plugin.UnloadLocalMediaStreamSource();
-                            Plugin.UnloadRemoteMediaStreamSource();
+                            Plugin.UnloadMediaStreamSource(localId);
+                            Plugin.UnloadMediaStreamSource(remoteId);
                             WebRTCStatus = WebRTCStatuses.Connected;
                             commandQueue.Add(new Command { type = CommandType.SetConnected });
                         }
                         else if (WebRTCStatus == WebRTCStatuses.InCall)
                         {
-                            Plugin.UnloadLocalMediaStreamSource();
-                            Plugin.UnloadRemoteMediaStreamSource();
+                            Plugin.UnloadMediaStreamSource(localId);
+                            Plugin.UnloadMediaStreamSource(remoteId);
                             WebRTCStatus = WebRTCStatuses.Connected;
                             commandQueue.Add(new Command { type = CommandType.SetConnected });
                         }
@@ -459,10 +477,16 @@ namespace STAR
             Conductor.Instance.VideoCodec = videoCodecList.FirstOrDefault(c => c.Name == PreferredVideoCodec);
 
             System.Diagnostics.Debug.WriteLine("Selected video codec - " + Conductor.Instance.VideoCodec.Name);
+#endif
+            UpdatePreferredFrameFormat();
+        }
 
-            uint preferredWidth = 1344;
-            uint preferredHeght = 756;
-            uint preferredFrameRate = 30;
+        protected void UpdatePreferredFrameFormat()
+        {
+#if NETFX_CORE
+            uint preferredWidth = VideoWidth;
+            uint preferredHeght = VideoHeight;
+            uint preferredFrameRate = VideoFrameRate;
             uint minSizeDiff = uint.MaxValue;
             Conductor.CaptureCapability selectedCapability = null;
             var videoDeviceList = Conductor.Instance.GetVideoCaptureDevices();
@@ -486,16 +510,18 @@ namespace STAR
             if (selectedCapability != null)
             {
                 selectedCapability.FrameRate = preferredFrameRate;
+                selectedCapability.MrcEnabled = AROverlay;
                 Conductor.Instance.VideoCaptureProfile = selectedCapability;
                 Conductor.Instance.UpdatePreferredFrameFormat();
                 System.Diagnostics.Debug.WriteLine("Selected video device capability - " + selectedCapability.Width + "x" + selectedCapability.Height + "@" + selectedCapability.FrameRate);
             }
-
 #endif
         }
 
-        protected void Conductor_OnAddRemoteStream()
+        protected void Conductor_OnAddRemoteStream(string remotePeerName)
         {
+            var remoteId = SourceIDs[remotePeerName];
+
 #if NETFX_CORE
             var task = RunOnUiThread(() =>
             {
@@ -505,19 +531,19 @@ namespace STAR
                     {
                         IMediaSource source;
                         if (Conductor.Instance.VideoCodec.Name == "H264")
-                            source = Conductor.Instance.CreateRemoteMediaStreamSource("H264");
+                            source = Conductor.Instance.CreateRemoteMediaStreamSource(remotePeerName, "H264");
                         else
-                            source = Conductor.Instance.CreateRemoteMediaStreamSource("I420");
-                        Plugin.LoadRemoteMediaStreamSource((MediaStreamSource)source);
+                            source = Conductor.Instance.CreateRemoteMediaStreamSource(remotePeerName, "I420");
+                        Plugin.LoadMediaStreamSource(remoteId, (MediaStreamSource)source);
                     }
                     else if (WebRTCStatus == WebRTCStatuses.Connected)
                     {
                         IMediaSource source;
                         if (Conductor.Instance.VideoCodec.Name == "H264")
-                            source = Conductor.Instance.CreateRemoteMediaStreamSource("H264");
+                            source = Conductor.Instance.CreateRemoteMediaStreamSource(remotePeerName, "H264");
                         else
-                            source = Conductor.Instance.CreateRemoteMediaStreamSource("I420");
-                        Plugin.LoadRemoteMediaStreamSource((MediaStreamSource)source);
+                            source = Conductor.Instance.CreateRemoteMediaStreamSource(remotePeerName, "I420");
+                        Plugin.LoadMediaStreamSource(remoteId, (MediaStreamSource)source);
                     }
                     else
                     {
@@ -528,7 +554,7 @@ namespace STAR
 #endif
         }
 
-        protected void Conductor_OnRemoveRemoteStream()
+        protected void Conductor_OnRemoveRemoteStream(string peerName)
         {
 #if NETFX_CORE
             var task = RunOnUiThread(() =>
@@ -552,6 +578,8 @@ namespace STAR
 
         protected void Conductor_OnAddLocalStream()
         {
+            var localId = SourceIDs[ClientName];
+
 #if NETFX_CORE
             var task = RunOnUiThread(() =>
             {
@@ -560,7 +588,7 @@ namespace STAR
                     if (WebRTCStatus == WebRTCStatuses.InCall)
                     {
                         var source = Conductor.Instance.CreateLocalMediaStreamSource("I420");
-                        Plugin.LoadLocalMediaStreamSource((MediaStreamSource)source);
+                        Plugin.LoadMediaStreamSource(localId, (MediaStreamSource)source);
 
                         Conductor.Instance.EnableLocalVideoStream();
                         Conductor.Instance.UnmuteMicrophone();
@@ -568,7 +596,7 @@ namespace STAR
                     else if (WebRTCStatus == WebRTCStatuses.Connected)
                     {
                         var source = Conductor.Instance.CreateLocalMediaStreamSource("I420");
-                        Plugin.LoadLocalMediaStreamSource((MediaStreamSource)source);
+                        Plugin.LoadMediaStreamSource(localId, (MediaStreamSource)source);
 
                         Conductor.Instance.EnableLocalVideoStream();
                         Conductor.Instance.UnmuteMicrophone();
@@ -584,49 +612,28 @@ namespace STAR
 
         protected static class Plugin
         {
-            [DllImport("MediaEngineUWP", CallingConvention = CallingConvention.StdCall, EntryPoint = "CreateLocalMediaPlayback")]
-            internal static extern void CreateLocalMediaPlayback();
+            [DllImport("MediaEngineUWP", CallingConvention = CallingConvention.StdCall, EntryPoint = "CreateMediaPlayback")]
+            internal static extern void CreateMediaPlayback(UInt32 id);
 
-            [DllImport("MediaEngineUWP", CallingConvention = CallingConvention.StdCall, EntryPoint = "CreateRemoteMediaPlayback")]
-            internal static extern void CreateRemoteMediaPlayback();
+            [DllImport("MediaEngineUWP", CallingConvention = CallingConvention.StdCall, EntryPoint = "ReleaseMediaPlayback")]
+            internal static extern void ReleaseMediaPlayback(UInt32 id);
 
-            [DllImport("MediaEngineUWP", CallingConvention = CallingConvention.StdCall, EntryPoint = "ReleaseLocalMediaPlayback")]
-            internal static extern void ReleaseLocalMediaPlayback();
-
-            [DllImport("MediaEngineUWP", CallingConvention = CallingConvention.StdCall, EntryPoint = "ReleaseRemoteMediaPlayback")]
-            internal static extern void ReleaseRemoteMediaPlayback();
-
-            [DllImport("MediaEngineUWP", CallingConvention = CallingConvention.StdCall, EntryPoint = "GetLocalPrimaryTexture")]
-            internal static extern void GetLocalPrimaryTexture(UInt32 width, UInt32 height, out System.IntPtr playbackTexture);
-
-            [DllImport("MediaEngineUWP", CallingConvention = CallingConvention.StdCall, EntryPoint = "GetRemotePrimaryTexture")]
-            internal static extern void GetRemotePrimaryTexture(UInt32 width, UInt32 height, out System.IntPtr playbackTexture);
+            [DllImport("MediaEngineUWP", CallingConvention = CallingConvention.StdCall, EntryPoint = "GetPrimaryTexture")]
+            internal static extern void GetPrimaryTexture(UInt32 id, UInt32 width, UInt32 height, out System.IntPtr playbackTexture);
 
 #if NETFX_CORE
-            [DllImport("MediaEngineUWP", CallingConvention = CallingConvention.StdCall, EntryPoint = "LoadLocalMediaStreamSource")]
-            internal static extern void LoadLocalMediaStreamSource(MediaStreamSource IMediaSourceHandler);
+            [DllImport("MediaEngineUWP", CallingConvention = CallingConvention.StdCall, EntryPoint = "LoadMediaStreamSource")]
+            internal static extern void LoadMediaStreamSource(UInt32 id, MediaStreamSource IMediaSourceHandler);
 
-            [DllImport("MediaEngineUWP", CallingConvention = CallingConvention.StdCall, EntryPoint = "UnloadLocalMediaStreamSource")]
-            internal static extern void UnloadLocalMediaStreamSource();
-
-            [DllImport("MediaEngineUWP", CallingConvention = CallingConvention.StdCall, EntryPoint = "LoadRemoteMediaStreamSource")]
-            internal static extern void LoadRemoteMediaStreamSource(MediaStreamSource IMediaSourceHandler);
-
-            [DllImport("MediaEngineUWP", CallingConvention = CallingConvention.StdCall, EntryPoint = "UnloadRemoteMediaStreamSource")]
-            internal static extern void UnloadRemoteMediaStreamSource();
+            [DllImport("MediaEngineUWP", CallingConvention = CallingConvention.StdCall, EntryPoint = "UnloadMediaStreamSource")]
+            internal static extern void UnloadMediaStreamSource(UInt32 id);
 #endif
 
-            [DllImport("MediaEngineUWP", CallingConvention = CallingConvention.StdCall, EntryPoint = "LocalPlay")]
-            internal static extern void LocalPlay();
+            [DllImport("MediaEngineUWP", CallingConvention = CallingConvention.StdCall, EntryPoint = "Play")]
+            internal static extern void Play(UInt32 id);
 
-            [DllImport("MediaEngineUWP", CallingConvention = CallingConvention.StdCall, EntryPoint = "RemotePlay")]
-            internal static extern void RemotePlay();
-
-            [DllImport("MediaEngineUWP", CallingConvention = CallingConvention.StdCall, EntryPoint = "LocalPause")]
-            internal static extern void LocalPause();
-
-            [DllImport("MediaEngineUWP", CallingConvention = CallingConvention.StdCall, EntryPoint = "RemotePause")]
-            internal static extern void RemotePause();
+            [DllImport("MediaEngineUWP", CallingConvention = CallingConvention.StdCall, EntryPoint = "Pause")]
+            internal static extern void Pause(UInt32 id);
         }
     }
 }
