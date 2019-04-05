@@ -20,14 +20,14 @@ namespace STAR
         protected Text BottomLeft;
         protected Text BottomRight;
 
-        public Modes Mode { get; private set; }
+        public Modes Mode { get; private set; } = Modes.DEBUG;
 
         private void Start()
         {
-            TopLeft = transform.Find("TopLeft").GetComponent<Text>();
-            TopRight = transform.Find("TopRight").GetComponent<Text>();
-            BottomLeft = transform.Find("BottomLeft").GetComponent<Text>();
-            BottomRight = transform.Find("BottomRight").GetComponent<Text>();
+            TopLeft = transform.Find("TopLeft").GetComponentInChildren<Text>();
+            TopRight = transform.Find("TopRight").GetComponentInChildren<Text>();
+            BottomLeft = transform.Find("BottomLeft").GetComponentInChildren<Text>();
+            BottomRight = transform.Find("BottomRight").GetComponentInChildren<Text>();
 
             Configurations.Instance.SetAndAddCallback("Billboard_StatusDebugMode", true, v =>
             {

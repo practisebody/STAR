@@ -789,11 +789,13 @@
     <Compile Include="Assets\Scripts\Models\SE3Object.cs" />
     <Compile Include="Assets\Scripts\Models\ToolAnnotation.cs" />
     <Compile Include="Assets\Scripts\Objects\Annotations.cs" />
-    <Compile Include="Assets\Scripts\Objects\FOVBillboard.cs" />
+    <Compile Include="Assets\Scripts\Objects\Billboard.cs" />
+    <Compile Include="Assets\Scripts\Objects\Frame.cs" />
     <Compile Include="Assets\Scripts\Objects\HoloInfo.cs" />
     <Compile Include="Assets\Scripts\Objects\HololensCamera.cs" />
     <Compile Include="Assets\Scripts\Objects\Room.cs" />
     <Compile Include="Assets\Scripts\Objects\Status.cs" />
+    <Compile Include="Assets\Scripts\Objects\FOVQuad.cs" />
     <Compile Include="Assets\Scripts\Objects\VideoPreview.cs" />
     <Compile Include="Assets\Scripts\Utilities\IObservable.cs" />
     <Compile Include="Assets\Scripts\Utilities\LocatableCameraUtils.cs" />

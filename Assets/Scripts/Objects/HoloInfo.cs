@@ -19,6 +19,9 @@ namespace STAR
         {
             LogStart();
             StatusStart();
+
+            Configurations.Instance.SetAndAddCallback("Billboard_ShowHoloInfo", false, v => gameObject.SetActive(v), Configurations.CallNow.YES, Configurations.RunOnMainThead.YES);
+            Configurations.Instance.AddCallback("*_PrepareUI", () => Configurations.Instance.Set("Billboard_ShowHoloInfo", false));
         }
 
         private void Update()
