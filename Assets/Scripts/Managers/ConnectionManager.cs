@@ -17,13 +17,15 @@ namespace STAR
 
         private void Start()
         {
-            _Connections["WebRTC"] = new WebRTCConnection();
-            _Connections["Socket"] = new SocketConnection();
-            foreach (IConnection conn in Connections)
-            {
+            foreach (IConnection conn in _Connections.Values)
                 conn.Start();
-                conn.OnMessageReceived += MessageReceived;
-            }
+        }
+
+        private void Awake()
+        {
+            Add(new WebRTCConnection(), MessageReceived);
+            Add(new SocketConnection(), MessageReceived);
+            Add(new NoninOximeterConnection());
         }
 
         private void Update()
@@ -32,6 +34,17 @@ namespace STAR
             {
                 conn.Update();
             }
+        }
+
+        protected void Add(IConnection conn)
+        {
+            _Connections[conn.Name] = conn;
+        }
+
+        protected void Add(IConnection conn, MessageHandler handler)
+        {
+            conn.OnMessageReceived += handler;
+            _Connections[conn.Name] = conn;
         }
 
         protected void MessageReceived(string s)
@@ -56,7 +69,7 @@ namespace STAR
                 }
                 else if (node["command"].Value == "REINIT_CAMERA")
                 {
-                    Configurations.Instance.Set("*_StablizationInit", null);
+                    Configurations.Instance.Invoke("*_StablizationInit");
                 }
                 else
                     AnnotationReceived(node);

@@ -16,17 +16,26 @@ namespace STAR
         public string Name => "Socket";
         public bool Connected => Client?.Connected ?? false;
 
+        public string StatusInfo => Connected.ToString();
+
         public event MessageHandler OnMessageReceived
         {
             add
             {
-                Client.OnMessageReceived += new LCY.USocketClient.MessageHandler(value);
+                if (Client == null)
+                    _OnMessageReceived += value;
+                else
+                    Client.OnMessageReceived += new USocketClient.MessageHandler(value);
             }
             remove
             {
-                Client.OnMessageReceived -= new LCY.USocketClient.MessageHandler(value);
+                if (Client == null)
+                    _OnMessageReceived -= value;
+                else
+                    Client.OnMessageReceived -= new USocketClient.MessageHandler(value);
             }
         }
+        protected event MessageHandler _OnMessageReceived;
 
         public void Start()
         {
@@ -35,6 +44,8 @@ namespace STAR
                 Persistent = true,
                 Timeout = 1000
             };
+            foreach (Delegate del in _OnMessageReceived.GetInvocationList())
+                Client.OnMessageReceived += new USocketClient.MessageHandler((MessageHandler)del);
             Configurations.Instance.SetAndAddCallback("ConnectionSocket_IP", Hostname, v => Client.Host = v);
             Configurations.Instance.SetAndAddCallback("ConnectionSocket_Port", Port, v => Client.Port = v);
             Configurations.Instance.SetAndAddCallback("ConnectionSocket_Connect", false, v =>

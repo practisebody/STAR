@@ -2,6 +2,7 @@
 using STAR;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -46,7 +47,7 @@ namespace STAR
             {
                 // TopLeft, WebRTC Status
                 WebRTCConnection conn = ConnectionManager.Instance["WebRTC"] as WebRTCConnection;
-                TopLeft.text = "Self: " + conn.WebRTCStatus.ToString() + "\n" +
+                TopLeft.text = "Self: " + conn.StatusInfo + "\n" +
                     "Peer: " + (conn.PeerName ?? "NotConnected");
                 switch (conn.Status)
                 {
@@ -66,8 +67,25 @@ namespace STAR
                 if (ip != null)
                     TopRight.text = Utilities.GetIPAddress();
                 TopRight.color = ip == null ? Color.red : Color.green;
-
             }
+
+            // BottomLeft, Vital signs
+            NoninOximeterConnection oxiConn = ConnectionManager.Instance["Oximeter"] as NoninOximeterConnection;
+            if (oxiConn.StatusInfo == null)
+            {
+                StringBuilder sb = new StringBuilder();
+                Color oxiColor = oxiConn.Connected ? Color.green : Color.red;
+                sb.Append("Pulse rate: ").Append(oxiConn.PulseRate).AppendLine();
+                sb.Append("SpO2: ").Append(oxiConn.SpO2).Append("%");
+                BottomLeft.text = sb.ToString();
+                BottomLeft.color = oxiColor;
+            }
+            else
+            {
+                BottomLeft.text = oxiConn.StatusInfo;
+                BottomLeft.color = Color.red;
+            }
+            
         }
     }
 }

@@ -12,6 +12,7 @@ namespace STAR
     {
         string Name { get; }
         bool Connected { get; }
+        string StatusInfo { get; }
 
         event MessageHandler OnMessageReceived;
 

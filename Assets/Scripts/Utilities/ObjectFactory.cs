@@ -12,6 +12,7 @@ namespace STAR
         {
             InitGizmoPrefab();
             InitRayPrefab();
+            InitTagPrefab();
             InitToolPrefab();
             InitPolylinePrefab();
         }
@@ -64,6 +65,22 @@ namespace STAR
             ray.startWidth = width;
             ray.endWidth = width;
             return ray;
+        }
+
+        #endregion
+
+        #region Tag
+
+        static protected GameObject TagPrefab { get; set; }
+
+        static protected void InitTagPrefab()
+        {
+            TagPrefab = Resources.Load<GameObject>("Tag");
+        }
+
+        static public GameObject NewTag(Transform parent, Vector3 position)
+        {
+            return Instantiate(TagPrefab, position, new Quaternion(), parent);
         }
 
         #endregion

@@ -12,16 +12,13 @@
     <ProjectTypeGuids>{E097FAD1-6243-4DAD-9C02-E9B9EFC3FFC1};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <TargetFrameworkIdentifier>.NETFramework</TargetFrameworkIdentifier>
     <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
-    <TargetFrameworkProfile>
-    </TargetFrameworkProfile>
-    <CompilerResponseFile>
-    </CompilerResponseFile>
+    <TargetFrameworkProfile></TargetFrameworkProfile>
+    <CompilerResponseFile></CompilerResponseFile>
     <UnityProjectGenerator>VSTU</UnityProjectGenerator>
     <UnityProjectType>Game:1</UnityProjectType>
     <UnityBuildTarget>WSAPlayer:21</UnityBuildTarget>
     <UnityVersion>2017.4.3f1</UnityVersion>
-    <RootNamespace>
-    </RootNamespace>
+    <RootNamespace></RootNamespace>
     <LangVersion>6</LangVersion>
   </PropertyGroup>
   <PropertyGroup>
@@ -780,6 +777,8 @@
     <Compile Include="Assets\LCY\Universal\UVideoCapture.cs" />
     <Compile Include="Assets\Scripts\Managers\ConnectionManager.cs" />
     <Compile Include="Assets\Scripts\Managers\Connections\IConnection.cs" />
+    <Compile Include="Assets\Scripts\Managers\Connections\NoninOximeterConnection.cs" />
+    <Compile Include="Assets\Scripts\Managers\Connections\NoninPulseOximetryService.cs" />
     <Compile Include="Assets\Scripts\Managers\Connections\SocketConnection.cs" />
     <Compile Include="Assets\Scripts\Managers\Connections\WebRTCConnection.cs" />
     <Compile Include="Assets\Scripts\Managers\ControllerManager.cs" />
@@ -790,12 +789,13 @@
     <Compile Include="Assets\Scripts\Models\ToolAnnotation.cs" />
     <Compile Include="Assets\Scripts\Objects\Annotations.cs" />
     <Compile Include="Assets\Scripts\Objects\Billboard.cs" />
+    <Compile Include="Assets\Scripts\Objects\FOVQuad.cs" />
     <Compile Include="Assets\Scripts\Objects\Frame.cs" />
     <Compile Include="Assets\Scripts\Objects\HoloInfo.cs" />
     <Compile Include="Assets\Scripts\Objects\HololensCamera.cs" />
     <Compile Include="Assets\Scripts\Objects\Room.cs" />
     <Compile Include="Assets\Scripts\Objects\Status.cs" />
-    <Compile Include="Assets\Scripts\Objects\FOVQuad.cs" />
+    <Compile Include="Assets\Scripts\Objects\Tags.cs" />
     <Compile Include="Assets\Scripts\Objects\VideoPreview.cs" />
     <Compile Include="Assets\Scripts\Utilities\IObservable.cs" />
     <Compile Include="Assets\Scripts\Utilities\LocatableCameraUtils.cs" />

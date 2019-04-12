@@ -57,6 +57,7 @@ namespace STAR
 
         public string Name => "WebRTC";
         public bool Connected => WebRTCStatus == WebRTCStatuses.Connected;
+        public string StatusInfo => WebRTCStatus.ToString();
 
         public event MessageHandler OnMessageReceived;
 
@@ -81,7 +82,7 @@ namespace STAR
                 }
             }
         }
-        public WebRTCStatuses WebRTCStatus { get; set; } = WebRTCStatuses.NotConnected;
+        protected WebRTCStatuses WebRTCStatus { get; set; } = WebRTCStatuses.NotConnected;
 
         // parameters
         protected string ServerAddress = "https://purduestarproj-webrtc-signal.herokuapp.com";
