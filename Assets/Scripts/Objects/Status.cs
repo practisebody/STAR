@@ -16,76 +16,116 @@ namespace STAR
             RUN,
         };
 
-        protected Text TopLeft;
-        protected Text TopRight;
-        protected Text BottomLeft;
-        protected Text BottomRight;
+        protected Transform TopLeft;
+        protected Text TopLeftText;
+        protected Transform TopLeftOther;
+
+        protected Transform TopRight;
+        protected Text TopRightText;
+        protected Transform TopRightOther;
+
+        protected Transform BottomLeft;
+        protected Text BottomLeftText;
+        protected Transform BottomLeftOther;
+        protected VitalSign HR;
+        protected VitalSign SpO2;
+
+        protected Transform BottomRight;
+        protected Text BottomRightText;
+        protected Transform BottomRightOther;
 
         public Modes Mode { get; private set; } = Modes.DEBUG;
 
         private void Start()
         {
-            TopLeft = transform.Find("TopLeft").GetComponentInChildren<Text>();
-            TopRight = transform.Find("TopRight").GetComponentInChildren<Text>();
-            BottomLeft = transform.Find("BottomLeft").GetComponentInChildren<Text>();
-            BottomRight = transform.Find("BottomRight").GetComponentInChildren<Text>();
+            TopLeft = transform.Find("TopLeft");
+            TopLeftText = TopLeft.GetComponentInChildren<Text>();
+            TopLeftOther = TopLeft.Find("Other");
+
+            TopRight = transform.Find("TopRight");
+            TopRightText = TopRight.GetComponentInChildren<Text>();
+            TopRightOther = TopRight.Find("Other");
+
+            BottomLeft = transform.Find("BottomLeft");
+            BottomLeftText = BottomLeft.GetComponentInChildren<Text>();
+            BottomLeftOther = BottomLeft.Find("Other");
+            HR = ObjectFactory.NewVitalSign(BottomLeftOther);
+            HR.Init(new Vector3(0.1f, 0.135f, 0f), Color.green, "HR", "160", "75");
+            SpO2 = ObjectFactory.NewVitalSign(BottomLeftOther);
+            SpO2.Init(new Vector3(0.1f, 0.385f, 0f), Color.cyan, "SpO2", "100", "90");
+
+            BottomRight = transform.Find("BottomRight");
+            BottomRightText = BottomRight.GetComponentInChildren<Text>();
+            BottomRightOther = BottomRight.Find("Other");
 
             Configurations.Instance.SetAndAddCallback("Billboard_StatusDebugMode", true, v =>
             {
                 Mode = v ? Modes.DEBUG : Mode = Modes.RUN;
-                TopLeft.text = string.Empty;
-                TopRight.text = string.Empty;
-                BottomLeft.text = string.Empty;
-                BottomRight.text = string.Empty;
+                Clear();
             }, Configurations.CallNow.YES, Configurations.RunOnMainThead.YES);
             Configurations.Instance.AddCallback("*_PrepareUI", () => Configurations.Instance.Set("Billboard_StatusDebugMode", false));
         }
 
         private void Update()
         {
+            NoninOximeterConnection oxiConn = ConnectionManager.Instance["Oximeter"] as NoninOximeterConnection;
+
             if (Mode == Modes.DEBUG)
             {
                 // TopLeft, WebRTC Status
                 WebRTCConnection conn = ConnectionManager.Instance["WebRTC"] as WebRTCConnection;
-                TopLeft.text = "Self: " + conn.StatusInfo + "\n" +
+                TopLeftText.text = "Self: " + conn.StatusInfo + "\n" +
                     "Peer: " + (conn.PeerName ?? "NotConnected");
                 switch (conn.Status)
                 {
                     case WebRTCConnection.Statuses.NotConnected:
-                        TopLeft.color = Color.red;
+                        TopLeftText.color = Color.red;
                         break;
                     case WebRTCConnection.Statuses.Pending:
-                        TopLeft.color = Color.yellow;
+                        TopLeftText.color = Color.yellow;
                         break;
                     case WebRTCConnection.Statuses.Connected:
-                        TopLeft.color = Color.green;
+                        TopLeftText.color = Color.green;
                         break;
                 }
 
                 // TopRight, IP address
                 string ip = Utilities.GetIPAddress();
                 if (ip != null)
-                    TopRight.text = Utilities.GetIPAddress();
-                TopRight.color = ip == null ? Color.red : Color.green;
+                    TopRightText.text = Utilities.GetIPAddress();
+                TopRightText.color = ip == null ? Color.red : Color.green;
             }
 
             // BottomLeft, Vital signs
-            NoninOximeterConnection oxiConn = ConnectionManager.Instance["Oximeter"] as NoninOximeterConnection;
             if (oxiConn.StatusInfo == null)
             {
-                StringBuilder sb = new StringBuilder();
-                Color oxiColor = oxiConn.Connected ? Color.green : Color.red;
-                sb.Append("Pulse rate: ").Append(oxiConn.PulseRate).AppendLine();
-                sb.Append("SpO2: ").Append(oxiConn.SpO2).Append("%");
-                BottomLeft.text = sb.ToString();
-                BottomLeft.color = oxiColor;
+                if (Mode == Modes.DEBUG)
+                {
+                    StringBuilder sb = new StringBuilder();
+                    Color oxiColor = oxiConn.Connected ? Color.green : Color.red;
+                    sb.Append("Pulse rate: ").Append(oxiConn.PulseRate).AppendLine();
+                    sb.Append("SpO2: ").Append(oxiConn.SpO2).Append("%");
+                    BottomRightText.text = sb.ToString();
+                    BottomRightText.color = oxiColor;
+                }
+
+                HR.Value = oxiConn.PulseRate;
+                SpO2.Value = oxiConn.SpO2;
             }
             else
             {
-                BottomLeft.text = oxiConn.StatusInfo;
-                BottomLeft.color = Color.red;
+                BottomLeftText.text = oxiConn.StatusInfo;
+                BottomLeftText.color = Color.red;
             }
             
+        }
+
+        protected void Clear()
+        {
+            TopLeftText.text = string.Empty;
+            TopRightText.text = string.Empty;
+            BottomLeftText.text = string.Empty;
+            BottomRightText.text = string.Empty;
         }
     }
 }

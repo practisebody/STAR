@@ -38,7 +38,7 @@ namespace STAR
         protected Vector3 GetPlace()
         {
             RaycastHit hitInfo;
-            bool result = Physics.Raycast(Camera.transform.position, Camera.transform.forward, out hitInfo, 300.0f, SpatialMappingManager.Instance.LayerMask);
+            Physics.Raycast(Camera.transform.position, Camera.transform.forward, out hitInfo, 300.0f, SpatialMappingManager.Instance.LayerMask);
             return hitInfo.point;
         }
     }

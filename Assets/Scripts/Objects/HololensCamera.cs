@@ -159,12 +159,12 @@ namespace STAR
                 {
                     ["type"] = "U",
                     ["cameraMatrix"] = new JArray(new float[]
-                {
-                    c.m00, c.m01, c.m02, c.m03,
-                    c.m10, c.m11, c.m12, c.m13,
-                    c.m20, c.m21, c.m22, c.m23,
-                    c.m30, c.m31, c.m32, c.m33
-                })
+                    {
+                        c.m00, c.m01, c.m02, c.m03,
+                        c.m10, c.m11, c.m12, c.m13,
+                        c.m20, c.m21, c.m22, c.m23,
+                        c.m30, c.m31, c.m32, c.m33
+                    })
                 };
 
                 JObject container = new JObject

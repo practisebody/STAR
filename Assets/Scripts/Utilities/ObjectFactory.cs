@@ -8,13 +8,14 @@ namespace STAR
 {
     public class ObjectFactory : UnitySingleton<ObjectFactory>
     {
-        private void Start()
+        private void Awake()
         {
             InitGizmoPrefab();
             InitRayPrefab();
             InitTagPrefab();
             InitToolPrefab();
             InitPolylinePrefab();
+            InitVitalSignPrefab();
         }
 
         #region gizmo
@@ -171,6 +172,22 @@ namespace STAR
         }
 
         #endregion
+
+        #endregion
+
+        #region vital sign
+
+        static protected GameObject VitalSignPrefab { get; set; }
+
+        static protected void InitVitalSignPrefab()
+        {
+            VitalSignPrefab = Resources.Load<GameObject>("VitalSign/VitalSign");
+        }
+
+        static public VitalSign NewVitalSign(Transform parent)
+        {
+            return Instantiate(VitalSignPrefab, parent).GetComponent<VitalSign>();
+        }
 
         #endregion
     }

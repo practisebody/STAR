@@ -4,7 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using Newtonsoft.Json.Linq;
 #if NETFX_CORE
+using HoloPoseClient.Signalling;
 using Windows.Devices.Bluetooth.GenericAttributeProfile;
 using Windows.Devices.Enumeration;
 #endif
@@ -29,8 +31,8 @@ namespace STAR
         // Nonin Oximetry Service UUID
         protected readonly Guid OXI_SERVICE_UUID = new Guid("46a970e0-0d5f-11e2-8b5e-0002a5d5c51b");
 
-        protected int _SpO2 { get; set; } = -1;
-        protected int _PulseRate { get; set; } = -1;
+        protected int _SpO2 { get; set; } = Invalid_SpO2;
+        protected int _PulseRate { get; set; } = Invalid_PulseRate;
         public string SpO2 { get { return _SpO2 == Invalid_SpO2 ? "--" : _SpO2.ToString(); } }
         public string PulseRate { get { return _PulseRate == Invalid_PulseRate ? "--" : _PulseRate.ToString(); } }
 
@@ -95,6 +97,21 @@ namespace STAR
             Connected = _SpO2 == Invalid_SpO2 && _PulseRate == Invalid_PulseRate;
 
             OnMessageReceived?.Invoke(string.Format("{0},{1}", _SpO2, _PulseRate));
+
+            // prepare initialization message
+            JObject message = new JObject
+            {
+                ["type"] = "O",
+                ["HR"] = PulseRate,
+                ["SpO2"] = SpO2
+            };
+
+            JObject container = new JObject
+            {
+                ["message"] = message
+            };
+            string jsonString = container.ToString();
+            Conductor.Instance.SendMessage(WebRTCConnection.MentorName, Windows.Data.Json.JsonObject.Parse(jsonString));
         }
 #endif
 
