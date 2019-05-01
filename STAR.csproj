@@ -798,6 +798,7 @@
     <Compile Include="Assets\Scripts\Objects\Tags.cs" />
     <Compile Include="Assets\Scripts\Objects\VideoPreview.cs" />
     <Compile Include="Assets\Scripts\Objects\VitalSign.cs" />
+    <Compile Include="Assets\Scripts\Objects\VitalSignPlacer.cs" />
     <Compile Include="Assets\Scripts\Utilities\IObservable.cs" />
     <Compile Include="Assets\Scripts\Utilities\LocatableCameraUtils.cs" />
     <Compile Include="Assets\Scripts\Utilities\ObjectFactory.cs" />

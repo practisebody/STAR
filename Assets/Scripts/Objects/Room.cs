@@ -39,6 +39,7 @@ namespace STAR
                 Configurations.Instance.Set("Stabilization_PlaneY", SurfaceMeshesToPlanes.Instance.FloorYPosition + PlaneDetectOffset);
                 ControllerManager.Instance.SendControl();
             }, Configurations.RunOnMainThead.YES);
+            Configurations.Instance.AddCallback("*_PrepareUI", () => Configurations.Instance.Set("Stabilization_ShowPlane", false));
         }
 
         private void SurfaceMeshesToPlanes_MakePlanesComplete(object source, System.EventArgs args)

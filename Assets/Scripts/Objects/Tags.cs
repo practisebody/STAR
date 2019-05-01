@@ -19,7 +19,7 @@ namespace STAR
             oxiConn = ConnectionManager.Instance["Oximeter"] as NoninOximeterConnection;
 
             Configurations.Instance.AddCallback("Tags_Place", () => Tag = ObjectFactory.NewTag(transform, GetPlace()), Configurations.RunOnMainThead.YES);
-            Configurations.Instance.AddCallback("Tags_RemoveTags", () => LCY.Utilities.DestroyChildren(transform), Configurations.RunOnMainThead.YES);
+            Configurations.Instance.AddCallback("Tags_Remove", () => LCY.Utilities.DestroyChildren(transform), Configurations.RunOnMainThead.YES);
         }
 
         private void Update()

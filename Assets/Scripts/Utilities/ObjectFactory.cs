@@ -184,9 +184,11 @@ namespace STAR
             VitalSignPrefab = Resources.Load<GameObject>("VitalSign/VitalSign");
         }
 
-        static public VitalSign NewVitalSign(Transform parent)
+        static public VitalSign NewVitalSign(Transform parent, Vector3 pos, Color color, string name, string high, string low)
         {
-            return Instantiate(VitalSignPrefab, parent).GetComponent<VitalSign>();
+            VitalSign vital = Instantiate(VitalSignPrefab, parent).GetComponentInChildren<VitalSign>();
+            vital.Init(pos, color, name, high, low);
+            return vital;
         }
 
         #endregion

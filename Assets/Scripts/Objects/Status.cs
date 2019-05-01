@@ -27,8 +27,6 @@ namespace STAR
         protected Transform BottomLeft;
         protected Text BottomLeftText;
         protected Transform BottomLeftOther;
-        protected VitalSign HR;
-        protected VitalSign SpO2;
 
         protected Transform BottomRight;
         protected Text BottomRightText;
@@ -49,10 +47,6 @@ namespace STAR
             BottomLeft = transform.Find("BottomLeft");
             BottomLeftText = BottomLeft.GetComponentInChildren<Text>();
             BottomLeftOther = BottomLeft.Find("Other");
-            HR = ObjectFactory.NewVitalSign(BottomLeftOther);
-            HR.Init(new Vector3(0.1f, 0.135f, 0f), Color.green, "HR", "160", "75");
-            SpO2 = ObjectFactory.NewVitalSign(BottomLeftOther);
-            SpO2.Init(new Vector3(0.1f, 0.385f, 0f), Color.cyan, "SpO2", "100", "90");
 
             BottomRight = transform.Find("BottomRight");
             BottomRightText = BottomRight.GetComponentInChildren<Text>();
@@ -68,8 +62,6 @@ namespace STAR
 
         private void Update()
         {
-            NoninOximeterConnection oxiConn = ConnectionManager.Instance["Oximeter"] as NoninOximeterConnection;
-
             if (Mode == Modes.DEBUG)
             {
                 // TopLeft, WebRTC Status
@@ -96,21 +88,16 @@ namespace STAR
                 TopRightText.color = ip == null ? Color.red : Color.green;
             }
 
-            // BottomLeft, Vital signs
+            // BottomRight, Vital signs
+            NoninOximeterConnection oxiConn = ConnectionManager.Instance["Oximeter"] as NoninOximeterConnection;
             if (oxiConn.StatusInfo == null)
             {
-                if (Mode == Modes.DEBUG)
-                {
-                    StringBuilder sb = new StringBuilder();
-                    Color oxiColor = oxiConn.Connected ? Color.green : Color.red;
-                    sb.Append("Pulse rate: ").Append(oxiConn.PulseRate).AppendLine();
-                    sb.Append("SpO2: ").Append(oxiConn.SpO2).Append("%");
-                    BottomRightText.text = sb.ToString();
-                    BottomRightText.color = oxiColor;
-                }
-
-                HR.Value = oxiConn.PulseRate;
-                SpO2.Value = oxiConn.SpO2;
+                StringBuilder sb = new StringBuilder();
+                Color oxiColor = oxiConn.Connected ? Color.green : Color.red;
+                sb.Append("Pulse rate: ").Append(oxiConn.PulseRate).AppendLine();
+                sb.Append("SpO2: ").Append(oxiConn.SpO2).Append("%");
+                BottomRightText.text = sb.ToString();
+                BottomRightText.color = oxiColor;
             }
             else
             {
