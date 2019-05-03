@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace STAR
 {
-    class SocketConnection : IConnection
+    public class SocketConnection : IConnection
     {
         protected string Hostname = "192.168.2.123";
         protected int Port = 8988;

@@ -775,6 +775,11 @@
     <Compile Include="Assets\LCY\Universal\USocketClient.cs" />
     <Compile Include="Assets\LCY\Universal\USocketServer.cs" />
     <Compile Include="Assets\LCY\Universal\UVideoCapture.cs" />
+    <Compile Include="Assets\Scripts\Managers\ARUWP\ARUWPController.cs" />
+    <Compile Include="Assets\Scripts\Managers\ARUWP\ARUWPMarker.cs" />
+    <Compile Include="Assets\Scripts\Managers\ARUWP\ARUWPNative.cs" />
+    <Compile Include="Assets\Scripts\Managers\ARUWP\ARUWPUtils.cs" />
+    <Compile Include="Assets\Scripts\Managers\ARUWP\ARUWPVideo.cs" />
     <Compile Include="Assets\Scripts\Managers\ConnectionManager.cs" />
     <Compile Include="Assets\Scripts\Managers\Connections\IConnection.cs" />
     <Compile Include="Assets\Scripts\Managers\Connections\NoninOximeterConnection.cs" />
@@ -782,6 +787,7 @@
     <Compile Include="Assets\Scripts\Managers\Connections\SocketConnection.cs" />
     <Compile Include="Assets\Scripts\Managers\Connections\WebRTCConnection.cs" />
     <Compile Include="Assets\Scripts\Managers\ControllerManager.cs" />
+    <Compile Include="Assets\Scripts\Managers\UltrasoundTracker.cs" />
     <Compile Include="Assets\Scripts\Models\Annotation.cs" />
     <Compile Include="Assets\Scripts\Models\PolylineAnnotation.cs" />
     <Compile Include="Assets\Scripts\Models\SE3Camera.cs" />

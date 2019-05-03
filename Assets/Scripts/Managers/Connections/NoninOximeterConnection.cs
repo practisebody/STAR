@@ -36,7 +36,7 @@ namespace STAR
         public string SpO2 { get { return _SpO2 == Invalid_SpO2 ? "--" : _SpO2.ToString(); } }
         public string PulseRate { get { return _PulseRate == Invalid_PulseRate ? "--" : _PulseRate.ToString(); } }
 
-        protected float Timer; // heart beat
+        protected float LastUpdate = 0f;
 
         public void Start()
         {
@@ -47,7 +47,12 @@ namespace STAR
 
         public void Update()
         {
-            //float Time.deltaTime
+            if (Time.time - LastUpdate > 2.0f)
+            {
+                Connected = false;
+                _SpO2 = Invalid_SpO2;
+                _PulseRate = Invalid_PulseRate;
+            }
         }
 
 #if NETFX_CORE
@@ -94,7 +99,9 @@ namespace STAR
             _SpO2 = OximetryMeasurementValue.SpO2Value;
             _PulseRate = OximetryMeasurementValue.PulseRateValue;
 
-            Connected = _SpO2 == Invalid_SpO2 && _PulseRate == Invalid_PulseRate;
+            Connected = _SpO2 != Invalid_SpO2 && _PulseRate != Invalid_PulseRate;
+            LCY.Utilities.InvokeMain(() => LastUpdate = Time.time, true);
+
 
             OnMessageReceived?.Invoke(string.Format("{0},{1}", _SpO2, _PulseRate));
 

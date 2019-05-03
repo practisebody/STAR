@@ -1,4 +1,5 @@
 ﻿using LCY;
+using Newtonsoft.Json.Linq;
 using SimpleJSON;
 using System;
 using System.Collections.Generic;
@@ -79,6 +80,17 @@ namespace STAR
         public static Vector3 JSON2Vector3(JSONNode node)
         {
             return new Vector3(node[0].AsFloat, node[1].AsFloat, node[2].AsFloat);
+        }
+
+        public static JArray Matrix4x42JArray(Matrix4x4 m)
+        {
+            return new JArray(new float[]
+                {
+                    m.m00, m.m01, m.m02, m.m03,
+                    m.m10, m.m11, m.m12, m.m13,
+                    m.m20, m.m21, m.m22, m.m23,
+                    m.m30, m.m31, m.m32, m.m33
+                });
         }
 
         // array

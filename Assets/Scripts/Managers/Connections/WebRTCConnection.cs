@@ -17,7 +17,7 @@ using HoloPoseClient.Signalling;
 
 namespace STAR
 {
-    class WebRTCConnection : IConnection
+    public class WebRTCConnection : IConnection
     {
         public enum Statuses
         {
@@ -82,7 +82,7 @@ namespace STAR
                 }
             }
         }
-        protected WebRTCStatuses WebRTCStatus { get; set; } = WebRTCStatuses.NotConnected;
+        public WebRTCStatuses WebRTCStatus { get; protected set; } = WebRTCStatuses.NotConnected;
 
         // parameters
         protected string ServerAddress = "https://purduestarproj-webrtc-signal.herokuapp.com";
@@ -101,12 +101,17 @@ namespace STAR
         protected Dictionary<string, uint> SourceIDs = new Dictionary<string, uint> { { MentorName, 0 }, { ClientName, 1 } };
 
         // video saver
-        protected bool VideoPose = false;
+        protected bool SaveVideo = false;
         protected FileStream VideoFrames;
         protected BinaryWriter VideoBinaryWriter;
 
+        // Ultrasound ArUco tracker
+        public ARUWPVideo UltrasoundTracker;
+
         public void Start()
         {
+            UltrasoundTracker = GameObject.Find("UltrasoundTracker").GetComponent<ARUWPVideo>();
+
 #if NETFX_CORE
             Conductor.Instance.LocalStreamEnabled = true;
             Debug.Log("setting up spatial coordinate system");
@@ -186,9 +191,9 @@ namespace STAR
                 v => { VideoHeight = v; UpdatePreferredFrameFormat(); });
             Configurations.Instance.SetAndAddCallback("ConnectionWebRTC_VideoFrameRate", VideoFrameRate,
                 v => { VideoFrameRate = v; UpdatePreferredFrameFormat(); });
-            Configurations.Instance.SetAndAddCallback("Stabilization_SavePose", VideoPose, v =>
+            Configurations.Instance.SetAndAddCallback("Stabilization_SavePose", SaveVideo, v =>
             {
-                if (VideoPose = v)
+                if (SaveVideo = v)
                 {
                     VideoFrames = File.Create(Utilities.FullPath(Utilities.TimeNow() + ".txt"));
                     VideoBinaryWriter = new BinaryWriter(VideoFrames);
@@ -268,7 +273,21 @@ namespace STAR
             byte[] yPlane, uint yPitch, byte[] vPlane, uint vPitch, byte[] uPlane, uint uPitch,
             float posX, float posY, float posZ, float rotX, float rotY, float rotZ, float rotW)
         {
-            if (VideoPose)
+#if NETFX_CORE
+            if (UltrasoundTracker.initializeVideoHere == false)
+            {
+                Matrix4x4 cameraPose = Matrix4x4.TRS(new Vector3(posX, posY, posZ), new Quaternion(rotX, rotY, rotZ, rotW), Vector3.one);
+                cameraPose.m02 = -cameraPose.m02;
+                cameraPose.m12 = -cameraPose.m12;
+                cameraPose.m20 = -cameraPose.m20;
+                cameraPose.m21 = -cameraPose.m21;
+                cameraPose.m23 = -cameraPose.m23;
+
+                UltrasoundTracker.OnFrameArrivedExternal(cameraPose, yPlane);
+            }
+#endif
+
+            if (SaveVideo)
             {
                 LCY.Utilities.InvokeMain(() =>
                 {

@@ -313,6 +313,9 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\Editor\ARUWPControllerEditor.cs" />
+    <Compile Include="Assets\Editor\ARUWPMarkerEditor.cs" />
+    <Compile Include="Assets\Editor\ARUWPVideoEditor.cs" />
     <Compile Include="Assets\HoloToolkit\BuildAndDeploy\Editor\BuildDeployPortal.cs" />
     <Compile Include="Assets\HoloToolkit\BuildAndDeploy\Editor\BuildDeployPrefs.cs" />
     <Compile Include="Assets\HoloToolkit\BuildAndDeploy\Editor\BuildDeployTools.cs" />

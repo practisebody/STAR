@@ -34,6 +34,9 @@ namespace STAR
 
         public Modes Mode { get; private set; } = Modes.DEBUG;
 
+        protected WebRTCConnection WebRTCConn;
+        protected ARUWPController UltrasoundController;
+
         private void Start()
         {
             TopLeft = transform.Find("TopLeft");
@@ -52,6 +55,9 @@ namespace STAR
             BottomRightText = BottomRight.GetComponentInChildren<Text>();
             BottomRightOther = BottomRight.Find("Other");
 
+            WebRTCConn = ConnectionManager.Instance["WebRTC"] as WebRTCConnection;
+            UltrasoundController = GameObject.Find("UltrasoundTracker").GetComponentInChildren<ARUWPController>();
+
             Configurations.Instance.SetAndAddCallback("Billboard_StatusDebugMode", true, v =>
             {
                 Mode = v ? Modes.DEBUG : Mode = Modes.RUN;
@@ -65,10 +71,9 @@ namespace STAR
             if (Mode == Modes.DEBUG)
             {
                 // TopLeft, WebRTC Status
-                WebRTCConnection conn = ConnectionManager.Instance["WebRTC"] as WebRTCConnection;
-                TopLeftText.text = "Self: " + conn.StatusInfo + "\n" +
-                    "Peer: " + (conn.PeerName ?? "NotConnected");
-                switch (conn.Status)
+                TopLeftText.text = "Self: " + WebRTCConn.StatusInfo + "\n" +
+                    "Peer: " + (WebRTCConn.PeerName ?? "NotConnected");
+                switch (WebRTCConn.Status)
                 {
                     case WebRTCConnection.Statuses.NotConnected:
                         TopLeftText.color = Color.red;
@@ -85,7 +90,21 @@ namespace STAR
                 string ip = Utilities.GetIPAddress();
                 if (ip != null)
                     TopRightText.text = Utilities.GetIPAddress();
-                TopRightText.color = ip == null ? Color.red : Color.green;
+                TopRightText.color = GetColor(ip != null);
+            }
+
+            // BottomLeft, Ultrasound
+            if (WebRTCConn.WebRTCStatus == WebRTCConnection.WebRTCStatuses.InCall)
+            {
+                Color ultraColor = GetColor(UltrasoundTracker.Tracked);
+                StringBuilder sb = new StringBuilder();
+                if (Mode == Modes.DEBUG)
+                {
+                    sb.Append("FPS: ").Append(UltrasoundController.GetTrackingFPS()).AppendLine();
+                }
+                sb.Append("Ultrasound: ").Append(UltrasoundTracker.Tracked ? "Tracked" : "Lost tracking");
+                BottomLeftText.text = sb.ToString();
+                BottomLeftText.color = ultraColor;
             }
 
             // BottomRight, Vital signs
@@ -93,7 +112,7 @@ namespace STAR
             if (oxiConn.StatusInfo == null)
             {
                 StringBuilder sb = new StringBuilder();
-                Color oxiColor = oxiConn.Connected ? Color.green : Color.red;
+                Color oxiColor = GetColor(oxiConn.Connected);
                 sb.Append("Pulse rate: ").Append(oxiConn.PulseRate).AppendLine();
                 sb.Append("SpO2: ").Append(oxiConn.SpO2).Append("%");
                 BottomRightText.text = sb.ToString();
@@ -101,8 +120,8 @@ namespace STAR
             }
             else
             {
-                BottomLeftText.text = oxiConn.StatusInfo;
-                BottomLeftText.color = Color.red;
+                BottomRightText.text = oxiConn.StatusInfo;
+                BottomRightText.color = Color.red;
             }
             
         }
@@ -113,6 +132,11 @@ namespace STAR
             TopRightText.text = string.Empty;
             BottomLeftText.text = string.Empty;
             BottomRightText.text = string.Empty;
+        }
+
+        protected Color GetColor(bool status)
+        {
+            return status ? Color.green : Color.red;
         }
     }
 }

@@ -103,22 +103,11 @@ namespace STAR
                         ["fy"] = Fy,
                         ["cx"] = Cx,
                         ["cy"] = Cy
-                    }
+                    },
+                    ["plane"] = Utilities.Matrix4x42JArray(p),
+                    ["cameraMatrix"] = Utilities.Matrix4x42JArray(c)
                 };
-                message["plane"] = new JArray(new float[]
-                {
-                    p.m00, p.m01, p.m02, p.m03,
-                    p.m10, p.m11, p.m12, p.m13,
-                    p.m20, p.m21, p.m22, p.m23,
-                    p.m30, p.m31, p.m32, p.m33
-                });
-                message["cameraMatrix"] = new JArray(new float[]
-                {
-                    c.m00, c.m01, c.m02, c.m03,
-                    c.m10, c.m11, c.m12, c.m13,
-                    c.m20, c.m21, c.m22, c.m23,
-                    c.m30, c.m31, c.m32, c.m33
-                });
+
                 JObject container = new JObject
                 {
                     ["message"] = message
@@ -158,13 +147,7 @@ namespace STAR
                 JObject message = new JObject
                 {
                     ["type"] = "U",
-                    ["cameraMatrix"] = new JArray(new float[]
-                    {
-                        c.m00, c.m01, c.m02, c.m03,
-                        c.m10, c.m11, c.m12, c.m13,
-                        c.m20, c.m21, c.m22, c.m23,
-                        c.m30, c.m31, c.m32, c.m33
-                    })
+                    ["cameraMatrix"] = Utilities.Matrix4x42JArray(c)
                 };
 
                 JObject container = new JObject
