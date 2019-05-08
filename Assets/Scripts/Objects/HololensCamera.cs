@@ -17,48 +17,11 @@ using HoloPoseClient.Signalling;
 
 namespace STAR
 {
+    /// <summary>
+    /// Hololens camera class
+    /// </summary>
     public class HololensCamera : SE3Camera
     {
-        [DllImport("HoloOpenCVHelper")]
-        protected static extern void initChessPoseController();
-        [DllImport("HoloOpenCVHelper")]
-        protected static extern void destroyChessPoseController();
-        [DllImport("HoloOpenCVHelper")]
-        protected static extern void newImage(IntPtr imageData);
-        [DllImport("HoloOpenCVHelper")]
-        protected static extern void setImageSize(int row, int col);
-        [DllImport("HoloOpenCVHelper")]
-        protected static extern void detect();
-        [DllImport("HoloOpenCVHelper")]
-        protected static extern int getNumMarkers();
-        [DllImport("HoloOpenCVHelper")]
-        protected static extern int getSize();
-        [DllImport("HoloOpenCVHelper")]
-        protected static extern int getRows();
-        [DllImport("HoloOpenCVHelper")]
-        protected static extern int getCols();
-        [DllImport("HoloOpenCVHelper")]
-        protected static extern int getInt();
-        [DllImport("HoloOpenCVHelper")]
-        protected static extern bool findExtrinsics(int chessX, int chessY, float chessSquareMeters, double cam_mtx_fx, double cam_mtx_fy,
-            double cam_mtx_cx, double cam_mtx_cy, double dist_k1, double dist_k2, double dist_p1, double dist_p2, double dist_k3);
-        [DllImport("HoloOpenCVHelper")]
-        protected static extern float getCheckerPoints(int index, int axis);
-        [DllImport("HoloOpenCVHelper")]
-        protected static extern IntPtr getProcessedImage();
-        [DllImport("HoloOpenCVHelper")]
-        protected static extern double GetRvec0();
-        [DllImport("HoloOpenCVHelper")]
-        protected static extern double GetRvec1();
-        [DllImport("HoloOpenCVHelper")]
-        protected static extern double GetRvec2();
-        [DllImport("HoloOpenCVHelper")]
-        protected static extern double GetTvec0();
-        [DllImport("HoloOpenCVHelper")]
-        protected static extern double GetTvec1();
-        [DllImport("HoloOpenCVHelper")]
-        protected static extern double GetTvec2();
-
         public Camera Camera;
         public Room Room;
         protected Transform HololensCameraRays;
@@ -72,6 +35,7 @@ namespace STAR
         {
             TheCamera = Camera;
             
+            // intrinsics, pre-calibrated
             Width = 1344;
             Height = 756;
             Fx = 1037.806f;
@@ -92,6 +56,7 @@ namespace STAR
 #if NETFX_CORE
                 Matrix4x4 p = Room.transform.localToWorldMatrix;
                 // prepare initialization message
+                // send plane and cmaera information
                 JObject message = new JObject
                 {
                     ["type"] = "I",
@@ -143,7 +108,7 @@ namespace STAR
             {
                 Matrix4x4 c = Camera.transform.localToWorldMatrix;
 #if NETFX_CORE
-                // prepare initialization message
+                // send camera location now, for debug only
                 JObject message = new JObject
                 {
                     ["type"] = "U",
@@ -173,6 +138,11 @@ namespace STAR
         protected BinaryWriter VideoBinaryWriter;
         protected string OutputDirectory;
 
+        /// <summary>
+        /// To record a first person video, as well as the room geometry
+        /// For debugging
+        /// [interal use]
+        /// </summary>
         protected void VideoStart()
         {
             UVideoCapture.Instance.GetVideoCaptureAsync(OnVideoCreated);

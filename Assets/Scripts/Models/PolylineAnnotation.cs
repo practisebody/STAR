@@ -7,6 +7,9 @@ using UnityEngine;
 
 namespace STAR
 {
+    /// <summary>
+    /// A polyline annotation
+    /// </summary>
     public class PolylineAnnotation : Annotation
     {
         public List<Vector2> Positions { get; protected set; }

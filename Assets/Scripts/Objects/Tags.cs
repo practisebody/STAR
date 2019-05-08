@@ -7,6 +7,9 @@ using UnityEngine;
 
 namespace STAR
 {
+    /// <summary>
+    /// A 3D tag showing vital sign information
+    /// </summary>
     public class Tags : MonoBehaviour
     {
         public Camera Camera;

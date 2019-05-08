@@ -7,6 +7,9 @@ using UnityEngine.UI;
 
 namespace STAR
 {
+    /// <summary>
+    /// Billboard that follows the user's view direction
+    /// </summary>
     public class Billboard : MonoBehaviour
     {
         public Camera Camera;

@@ -8,6 +8,9 @@ using UnityEngine.UI;
 
 namespace STAR
 {
+    /// <summary>
+    /// Additional information, mainly for debugging
+    /// </summary>
     public class HoloInfo : MonoBehaviour
     {
         public Camera Camera;
@@ -31,6 +34,7 @@ namespace STAR
 
         #region log
 
+        // Logs, all the information from Debug.Log
         protected Text LogText { get; set; }
         public string LogString { get; protected set; }
         public int MaxNumMessages;
@@ -65,6 +69,7 @@ namespace STAR
 
         #region status
 
+        // Status, Configurations, Object locations and Annotations
         protected Text StatusText { get; set; }
         public string StatusString { get; protected set; }
 

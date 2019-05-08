@@ -6,6 +6,9 @@ using UnityEngine;
 
 namespace STAR
 {
+    /// <summary>
+    /// The class to control the room geoemtry, stabilization plane
+    /// </summary>
     public class Room : MonoBehaviour
     {
         protected GameObject _Room;
@@ -42,6 +45,9 @@ namespace STAR
             Configurations.Instance.AddCallback("*_PrepareUI", () => Configurations.Instance.Set("Stabilization_ShowPlane", false));
         }
 
+        /// <summary>
+        /// Automatic detect the floor plane
+        /// </summary>
         private void SurfaceMeshesToPlanes_MakePlanesComplete(object source, System.EventArgs args)
         {
             LCY.Utilities.InvokeMain(() =>
@@ -51,6 +57,9 @@ namespace STAR
             }, false);
         }
 
+        /// <summary>
+        /// Raycast to intersect with the stablization plane
+        /// </summary>
         public bool Raycast(Vector3 origin, Vector3 dir, out Vector3 hitPoint)
         {
             float enter;

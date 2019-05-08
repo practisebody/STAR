@@ -5,6 +5,10 @@ using UnityEngine;
 
 namespace STAR
 {
+    /// <summary>
+    /// A SE3 object, that triggers observer if position changed
+    /// Works when other object's position relies on this object
+    /// </summary>
     public class SE3Object : MonoBehaviour, IObservable<SE3Object>
     {
         public SE3 localToWorldMatrix

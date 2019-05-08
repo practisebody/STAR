@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 namespace LCY
 {
     /// <summary>
-    /// Universal video capture class, have two ways to start a camera, polling and interrupt
-    /// The first is request new frames, while the second is whenever a new frame arrives, we process that
+    /// Universal video capture class, have two ways to start a camera, polling and interrupt.
+    /// The first is request new frames, while the second is whenever a new frame arrives, we process that.
     /// </summary>
     public class UVideoCapture
     {

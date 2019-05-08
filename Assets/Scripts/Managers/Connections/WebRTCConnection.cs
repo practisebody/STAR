@@ -17,6 +17,9 @@ using HoloPoseClient.Signalling;
 
 namespace STAR
 {
+    /// <summary>
+    /// Connects to WebRTC server
+    /// </summary>
     public class WebRTCConnection : IConnection
     {
         public enum Statuses
@@ -126,6 +129,7 @@ namespace STAR
             Conductor.Instance.EnableLogging(Conductor.LogLevel.Verbose);
             Debug.Log("done setting up the rest of the conductor");
 
+            // add the button to connect to server
             Configurations.Instance.AddCallback("*_Connect", () =>
             {
                 if (WebRTCStatus == WebRTCStatuses.NotConnected)
@@ -146,6 +150,7 @@ namespace STAR
                     WebRTCStatus = WebRTCStatuses.Disconnecting;
                 }
             });
+            // add the button to initiate the call
             Configurations.Instance.AddCallback("*_Call", () =>
             {
                 if (WebRTCStatus == WebRTCStatuses.Connected && PeerName != null)
@@ -204,19 +209,6 @@ namespace STAR
                     VideoFrames.Dispose();
                 }
             }, Configurations.RunOnMainThead.YES, Configurations.WaitUntilDone.YES);
-
-            Configurations.Instance.AddCallback("Annotation_DummyDense", () =>
-            {
-                StringBuilder sb = new StringBuilder(2500);
-                sb.Append("{\"id\":0,\"command\":\"CreateAnnotationCommand\",\"annotation_memory\":{\"annotation\":{\"annotationPoints\":[");
-                sb.Append("{\"x\":0.0,\"y\":0.0}");
-                for (int i = 1; i <= 100; ++i)
-                {
-                    sb.Append(",{\"x\":").Append(i / 100.0f).Append(",\"y\":").Append(i / 100.0f).Append("}");
-                }
-                sb.Append("],\"annotationType\":\"polyline\"}}}");
-                OnMessageReceived(sb.ToString());
-            }, Configurations.RunOnMainThead.NO);
         }
 
         public void Update()
@@ -267,13 +259,16 @@ namespace STAR
             PeerName = null;
         }
 
-        // fired whenever we encode one of our own video frames before sending it to the remote peer.
-        // if there is pose data, posXYZ and rotXYZW will have non-zero values.
+        /// <summary>
+        /// Called whenever we encode one of our own video frames before sending it to the remote peer.
+        /// If there is pose data, posXYZ and rotXYZW will have non-zero values.
+        /// </summary>
         protected void Conductor_OnSelfRawFrame(uint width, uint height,
             byte[] yPlane, uint yPitch, byte[] vPlane, uint vPitch, byte[] uPlane, uint uPitch,
             float posX, float posY, float posZ, float rotX, float rotY, float rotZ, float rotW)
         {
 #if NETFX_CORE
+            // get ultrasound controller pose from current image
             if (UltrasoundTracker.initializeVideoHere == false)
             {
                 Matrix4x4 cameraPose = Matrix4x4.TRS(new Vector3(posX, posY, posZ), new Quaternion(rotX, rotY, rotZ, rotW), Vector3.one);
@@ -298,6 +293,9 @@ namespace STAR
             }
         }
 
+        /// <summary>
+        /// Callback for raw message received
+        /// </summary>
         protected void Conductor_IncomingRawMessage(string peerName, string rawMessageString)
         {
             Debug.Log("incoming raw message from peer " + peerName + ": " + rawMessageString);
@@ -316,6 +314,10 @@ namespace STAR
             }
         }
 
+        /// <summary>
+        /// Initialize everything for WebRTC connection
+        /// [internal use]
+        /// </summary>
         protected void Initialize()
         {
 #if NETFX_CORE

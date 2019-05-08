@@ -5,6 +5,9 @@ using UnityEngine;
 
 namespace STAR
 {
+    /// <summary>
+    /// A quad that visualized user's field of view, since HoloLens's FOV is small..
+    /// </summary>
     public class FOVQuad : MonoBehaviour
     {
         private void Start()

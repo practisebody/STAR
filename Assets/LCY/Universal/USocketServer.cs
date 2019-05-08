@@ -16,7 +16,7 @@ namespace LCY
 {
     /// <summary>
     /// Universal socket server that works in both Unity editor and Hololens.
-    /// Return USocketClient for each incoming socket.
+    /// Return a USocketClient for each incoming socket.
     /// </summary>
     public sealed class USocketServer
     {

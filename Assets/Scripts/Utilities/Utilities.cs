@@ -17,8 +17,14 @@ using Windows.Storage;
 
 namespace STAR
 {
+    /// <summary>
+    /// Utility functions
+    /// </summary>
     static public class Utilities
     {
+        /// <summary>
+        /// Get current IP address
+        /// </summary>
         public static string GetIPAddress()
         {
 #if NETFX_CORE
@@ -32,12 +38,17 @@ namespace STAR
 #endif
         }
 
+        /// <summary>
+        /// Get current time as a string, typically for folder name
+        /// </summary>
         public static string TimeNow()
         {
             return DateTime.Now.ToString("yyMMdd_HHmmss");
         }
 
-        // Unity
+        /// <summary>
+        /// Persistent data path
+        /// </summary>
         public static string FolderName
         {
             get
@@ -50,11 +61,17 @@ namespace STAR
             }
         }
 
+        /// <summary>
+        /// Append file name to get full path
+        /// </summary>
         public static string FullPath(string name)
         {
             return Path.Combine(FolderName, name);
         }
 
+        /// <summary>
+        /// Create a folder
+        /// </summary>
         public static void CreateFolder(string name)
         {
             string fullname = Path.Combine(FolderName, name);
@@ -64,24 +81,35 @@ namespace STAR
             }
         }
 
+        /// <summary>
+        /// Save an array of bytes to a file
+        /// </summary>
         public static void SaveFile(byte[] bytes, string name)
         {
             string fullname = Path.Combine(FolderName, name);
             File.WriteAllBytes(fullname, bytes);
         }
 
+        /// <summary>
+        /// Save a string to a file
+        /// </summary>
         public static void SaveFile(string content, string name)
         {
             string fullname = Path.Combine(FolderName, name);
             File.WriteAllText(fullname, content);
         }
 
-        // JSONNode
+        /// <summary>
+        /// Converts a json string to Vector3
+        /// </summary>
         public static Vector3 JSON2Vector3(JSONNode node)
         {
             return new Vector3(node[0].AsFloat, node[1].AsFloat, node[2].AsFloat);
         }
 
+        /// <summary>
+        /// Converts a Matrix4x4 to json string
+        /// </summary>
         public static JArray Matrix4x42JArray(Matrix4x4 m)
         {
             return new JArray(new float[]
@@ -93,30 +121,8 @@ namespace STAR
                 });
         }
 
-        // array
-        public static void Flip(byte[] array, int width, int height, int mode, int channel = 4)
-        {
-            int rowStart, a, b;
-            int stride = width * channel;
-            byte temp;
-            for (int y = 0; y < height / 2; ++y)
-            {
-                rowStart = y * stride;
-                for (int x = 0; x < width; ++x)
-                {
-                    a = rowStart + x * channel;
-                    b = (height - y - 1) * stride + x * channel;
-                    for (int i = 0; i < channel; ++i)
-                    {
-                        temp = array[a + i];
-                        array[a + i] = array[b + i];
-                        array[b + i] = temp;
-                    }
-                }
-            }
-        }
+        #region log
 
-        // Log
         static public string FloatFormat { get; } = "F5";
 
         static public string FormatQuaternion(Quaternion? v)
@@ -154,13 +160,6 @@ namespace STAR
             Debug.Log(e.StackTrace);
         }
 
-        public static void PixelCoordToWorldCoord(Matrix4x4 cameraToWorldMatrix, Matrix4x4 projectionMatrix, UnityEngine.Resolution cameraResolution, Vector2 pixelCoordinates, out Vector3 direction)
-        {
-            pixelCoordinates = LocatableCameraUtils.ConvertPixelCoordsToScaledCoords(new Vector2(cameraResolution.width - pixelCoordinates.x, cameraResolution.height - pixelCoordinates.y), new HoloLensCameraStream.Resolution(cameraResolution.width, cameraResolution.height));
-            float focalLengthX = projectionMatrix.GetColumn(0).x;
-            float focalLengthY = projectionMatrix.GetColumn(1).y;
-            Vector3 dirRay = new Vector3(pixelCoordinates.x / focalLengthX, pixelCoordinates.y / focalLengthY, 1.0f).normalized;
-            direction = -new Vector3(Vector3.Dot(dirRay, cameraToWorldMatrix.GetRow(0)), Vector3.Dot(dirRay, cameraToWorldMatrix.GetRow(1)), Vector3.Dot(dirRay, cameraToWorldMatrix.GetRow(2))).normalized;
-        }
+        #endregion
     }
 }

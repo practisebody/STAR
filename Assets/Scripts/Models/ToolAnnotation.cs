@@ -4,6 +4,9 @@ using UnityEngine;
 
 namespace STAR
 {
+    /// <summary>
+    /// A tool annotation
+    /// </summary>
     public class ToolAnnotation : Annotation
     {
         public Vector2 Position { get; protected set; }

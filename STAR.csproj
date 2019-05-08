@@ -762,8 +762,6 @@
     <Compile Include="Assets\HoloToolkit\UX\Scripts\UICollection.cs" />
     <Compile Include="Assets\HoloToolkit\UX\Scripts\UsabilityScaler.cs" />
     <Compile Include="Assets\HoloToolkit\UX\Scripts\UsabilityUtilities.cs" />
-    <Compile Include="Assets\LCY\Math\ILerpable.cs" />
-    <Compile Include="Assets\LCY\Math\Stablizer.cs" />
     <Compile Include="Assets\LCY\Math\Utilities.cs" />
     <Compile Include="Assets\LCY\Singleton.cs" />
     <Compile Include="Assets\LCY\Unity\Configurations.cs" />
@@ -802,7 +800,6 @@
     <Compile Include="Assets\Scripts\Objects\Room.cs" />
     <Compile Include="Assets\Scripts\Objects\Status.cs" />
     <Compile Include="Assets\Scripts\Objects\Tags.cs" />
-    <Compile Include="Assets\Scripts\Objects\VideoPreview.cs" />
     <Compile Include="Assets\Scripts\Objects\VitalSign.cs" />
     <Compile Include="Assets\Scripts\Objects\VitalSignPlacer.cs" />
     <Compile Include="Assets\Scripts\Utilities\IObservable.cs" />

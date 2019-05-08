@@ -5,6 +5,9 @@ using UnityEngine;
 
 namespace STAR
 {
+    /// <summary>
+    /// The class to place vital sign graphs in 3D
+    /// </summary>
     public class VitalSignPlacer : MonoBehaviour
     {
         public Camera Camera;

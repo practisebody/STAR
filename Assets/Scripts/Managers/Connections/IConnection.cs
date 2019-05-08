@@ -8,6 +8,10 @@ namespace STAR
 {
     public delegate void MessageHandler(string message);
 
+    /// <summary>
+    /// Interface of a connection, each with a name, a connected flag
+    /// When a message arrives, message handler will be called
+    /// </summary>
     public interface IConnection
     {
         string Name { get; }

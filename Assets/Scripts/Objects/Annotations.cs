@@ -14,6 +14,9 @@ using Newtonsoft.Json.Linq;
 
 namespace STAR
 {
+    /// <summary>
+    /// All the annotations are here
+    /// </summary>
     public class Annotations : MonoBehaviour
     {
         public SE3Camera Camera;
@@ -84,6 +87,7 @@ namespace STAR
 
         #region spatial mapping
 
+        // Whenever spatial mapping changed, update annotation locations
         protected void OnSourceChanged(object sender, PropertyChangedEventArgsEx<SpatialMappingSource> e)
         {
             TryDetach(e.OldValue);
@@ -131,15 +135,21 @@ namespace STAR
         {
             Refresh();
         }
-        
+
         #endregion
 
+        /// <summary>
+        /// Add an annotation
+        /// </summary>
         public void Add(int id, Annotation a)
         {
             _Annotations[id] = a;
             Refresh();
         }
 
+        /// <summary>
+        /// Removes an annotation
+        /// </summary>
         public void Remove(int id)
         {
             _Annotations.Remove(id);
@@ -148,6 +158,9 @@ namespace STAR
 
         #region annotation
 
+        /// <summary>
+        /// Update all the annotations
+        /// </summary>
         public void Refresh()
         {
             LCY.Utilities.DestroyChildren(AnnotationsTransform);
@@ -155,13 +168,13 @@ namespace STAR
             LCY.Utilities.DestroyChildren(Cameras);
             RaycastHit hitInfo;
             SE3 matrix = Camera.localToWorldMatrix;
+            // for each annotation
             foreach (KeyValuePair<int, Annotation> entry in _Annotations)
             {
                 switch (entry.Value.Type)
                 {
                     case Annotation.AnnotationType.TOOL:
                         ToolAnnotation tool = (ToolAnnotation)entry.Value;
-                        InitAnnotationMatrix(tool.Matrix);
                         if (Raycast(matrix, tool.Position, out hitInfo))
                         {
                             Quaternion localRotation = Quaternion.AngleAxis(tool.Rotation, Vector3.up);
@@ -174,10 +187,10 @@ namespace STAR
                         break;
                     case Annotation.AnnotationType.POLYLINE:
                         PolylineAnnotation polyline = (PolylineAnnotation)entry.Value;
-                        InitAnnotationMatrix(polyline.Matrix);
                         List<Vector3> positions = new List<Vector3>();
                         foreach (Vector2 p in polyline.Positions)
                         {
+                            // only add point when it hits the geometry
                             if (Raycast(matrix, p, out hitInfo))
                             {
                                 positions.Add(hitInfo.point);
@@ -196,57 +209,28 @@ namespace STAR
             }
         }
 
-        protected SE3 AnnotationMatrix;
-        protected Quaternion rotation;
-        protected Vector3 translation;
-
-        protected void InitAnnotationMatrix(SE3 matrix)
-        {
-            AnnotationMatrix = matrix;
-            rotation = matrix.Rotation;
-            translation = matrix.Translation;
-            // (0, 1) (1, 1)
-            // (0, 0) (1, 0)
-            Vector3 dir00 = rotation * Camera.Unproj(Vector2.zero);
-            Vector3 dir01 = rotation * Camera.Unproj(Vector2.up);
-            Vector3 dir10 = rotation * Camera.Unproj(Vector2.right);
-            Vector3 p00, p01, p10;
-            Room.Raycast(translation, dir00, out p00);
-            Room.Raycast(translation, dir01, out p01);
-            Room.Raycast(translation, dir10, out p10);
-            ObjectFactory.NewGizmo(Cameras, translation, rotation);
-            ObjectFactory.NewRay(Cameras, translation, translation + 10.0f * dir00, Color.red);
-            ObjectFactory.NewRay(Cameras, translation, translation + 10.0f * dir01, Color.green);
-            ObjectFactory.NewRay(Cameras, translation, translation + 10.0f * dir10, Color.blue);
-        }
-
+        /// <summary>
+        /// Raycast the annotation point to intersect with geometry
+        /// </summary>
         protected bool Raycast(SE3 matrix, Vector2 anno, out RaycastHit hitInfo)
         {
-            //Vector3 p;
-            //Room.Raycast(matrix.Translation, matrix.Rotation * Camera.Unproj(anno), out p);
-            //ObjectFactory.NewRay(Rays, matrix.Translation, p, Color.green);
-            //Vector3 projected = Camera.Project(AnnotationMatrix.inverse * p);
-            //Vector2 uv = new Vector2(projected.x, projected.y);
-
-            //Vector3 direction = rotation * Camera.Unproj(uv);
-            //bool result = Physics.Raycast(translation, direction, out hitInfo, 300.0f, SpatialMappingManager.Instance.LayerMask);
             Vector3 direction = matrix.Rotation * Camera.Unproj(anno);
             bool result;
             if (OnPlane)
             {
                 Vector3 p;
                 result = Room.Raycast(matrix.Translation, matrix.Rotation * Camera.Unproj(anno), out p);
-                hitInfo = new RaycastHit();
-                hitInfo.point = p;
+                hitInfo = new RaycastHit
+                {
+                    point = p
+                };
             }
             else
                 result = Physics.Raycast(matrix.Translation, direction, out hitInfo, 300.0f, SpatialMappingManager.Instance.LayerMask);
-            //hitInfo.distance += ToolOffset;
             hitInfo.point += ToolOffset * direction;
             hitInfo.point += AnnotationXOffset * Vector3.right;
             hitInfo.point += AnnotationYOffset * Vector3.forward;
             hitInfo.point += AnnotationZOffset * Vector3.up;
-            //ObjectFactory.NewRay(Rays, translation, hitInfo.point, Color.white, 0.005f);
             ObjectFactory.NewRay(Rays, matrix.Translation, hitInfo.point, Color.white, 0.005f);
             return result;
         }

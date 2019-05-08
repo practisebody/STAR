@@ -3,6 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// A graph to show visualize vital sign, such as heart rate
+/// </summary>
 public class VitalSign : MonoBehaviour
 {
     protected const float size = 3.26f;
@@ -23,6 +26,10 @@ public class VitalSign : MonoBehaviour
 
     public string Name { get; protected set; }
 
+    /// <summary>
+    /// Set current value, which is a string
+    /// If it's a number, will update the graph; otherwise a straight line will be shown
+    /// </summary>
     public string Value
     {
         set
@@ -34,6 +41,9 @@ public class VitalSign : MonoBehaviour
     }
     protected int _Value { get; set; }
 
+    /// <summary>
+    /// Initialize position, color, name and high/low value
+    /// </summary>
     public void Init(Vector3 pos, Color color, string name, string high, string low)
     {
         Color = color;
@@ -72,7 +82,7 @@ public class VitalSign : MonoBehaviour
         {
             refGraph[i] = float.Parse(lines[i + 1]);
         }
-}
+    }
 
     private void Update()
     {

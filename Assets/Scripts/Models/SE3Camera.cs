@@ -5,9 +5,12 @@ using UnityEngine;
 
 namespace STAR
 {
+    /// <summary>
+    /// A SE3 Camera
+    /// </summary>
     public class SE3Camera : SE3Object
     {
-        // intrinsic
+        // intrinsic parameter
         public int Width { get; protected set; }
         public int Height { get; protected set; }
         public float Fx { get; protected set; }
@@ -26,6 +29,10 @@ namespace STAR
             NO,
         };
 
+        /// <summary>
+        /// Undistort a point using intrinsics iteratively
+        /// See https://docs.opencv.org/3.0-beta/modules/imgproc/doc/geometric_transformations.html?highlight=undistort#undistortpoints
+        /// </summary>
         public Vector2 Undistort(float x0, float y0)
         {
             float x = x0, y = y0;
@@ -41,11 +48,17 @@ namespace STAR
             return new Vector2(x, y);
         }
 
+        /// <summary>
+        /// Project a Vector3 in world space to a Vector2 image space
+        /// </summary>
         public Vector3 Project(Vector3 P)
         {
             return new Vector3((P.x * Fx / P.z + Cx) / Width, (P.y * Fy / P.z + Cy) / Height, P.z);
         }
 
+        /// <summary>
+        /// Unproject a Vector2 on image space in (u, v) coordinate to a Vector3 world space
+        /// </summary>
         public Vector3 UnprojRaw(Vector2 p, DoUndistort undistort = DoUndistort.NO, bool invertX = false, bool invertY = false)
         {
             float x = (p.x - Cx) / Fx;
@@ -62,6 +75,9 @@ namespace STAR
                 return new Vector3(x, y, 1.0f).normalized;
         }
 
+        /// <summary>
+        /// Unproject a Vector2 on image space in [0, 1] scale to a Vector3 world space
+        /// </summary>
         public Vector3 Unproj(Vector2 p, DoUndistort undistort = DoUndistort.NO, bool invertX = false, bool invertY = false)
         {
             return UnprojRaw(new Vector2(p.x * Width, p.y * Height), undistort, invertX, invertY);

@@ -5,7 +5,11 @@ using UnityEngine;
 
 namespace LCY
 {
-    public class SE3 : ILerpable<SE3>
+    /// <summary>
+    /// A SE3 class, helpful function to convert between rotation, translation.
+    /// See https://www.seas.upenn.edu/~meam620/slides/kinematicsI.pdf.
+    /// </summary>
+    public class SE3
     {
         protected Quaternion rotation;
         public Quaternion Rotation
@@ -64,15 +68,6 @@ namespace LCY
             Matrix4x4 m = new Matrix4x4();
             m.SetTRS(position, new Quaternion(rotation.x, rotation.y, -rotation.z, -rotation.w), Vector3.one);
             return m;
-        }
-
-        public SE3 Lerp(SE3 a, SE3 b, float t)
-        {
-            Quaternion Ra = a.Rotation, Rb = b.Rotation;
-            Vector3 Ta = a.Translation, Tb = b.Translation;
-            Quaternion R = Quaternion.Lerp(Ra, Rb, t);
-            Vector3 T = Vector3.Lerp(Ta, Tb, t);
-            return new SE3(R, T);
         }
     }
 }

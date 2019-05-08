@@ -6,6 +6,7 @@ using SimpleJSON;
 
 namespace STAR
 {
+
     public class ConnectionManager : UnitySingleton<ConnectionManager>
     {
         public Annotations Annotations;

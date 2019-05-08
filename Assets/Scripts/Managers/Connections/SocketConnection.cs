@@ -7,6 +7,10 @@ using System.Threading.Tasks;
 
 namespace STAR
 {
+    /// <summary>
+    /// Connects to a socket server that sends annotations
+    /// For test only
+    /// </summary>
     public class SocketConnection : IConnection
     {
         protected string Hostname = "192.168.2.123";

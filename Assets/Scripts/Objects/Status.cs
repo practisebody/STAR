@@ -8,8 +8,12 @@ using UnityEngine.UI;
 
 namespace STAR
 {
+    /// <summary>
+    /// The current status of the system
+    /// </summary>
     public class Status : MonoBehaviour
     {
+        // Two different modes, showing different information about the system
         public enum Modes
         {
             DEBUG,
@@ -66,6 +70,11 @@ namespace STAR
             Configurations.Instance.AddCallback("*_PrepareUI", () => Configurations.Instance.Set("Billboard_StatusDebugMode", false));
         }
 
+        /// <summary>
+        /// Update all the information
+        /// TopLeft: WebRTC connection status;  TopRight: IP address
+        /// BottomLeft: Ultrasound status; BottomRight: Vital signs
+        /// </summary>
         private void Update()
         {
             if (Mode == Modes.DEBUG)

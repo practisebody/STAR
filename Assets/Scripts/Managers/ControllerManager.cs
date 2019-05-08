@@ -10,8 +10,12 @@ using System.Threading.Tasks;
 
 namespace STAR
 {
+    /// <summary>
+    /// Controller that wraps around Configurations, and connects to the controller app
+    /// </summary>
     public class ControllerManager : UnitySingleton<ControllerManager>
     {
+        // listening to 12345 port
         public int Port = 12345;
         protected USocketServer Server { get; set; }
         protected USocketClient Client { get; set; }
@@ -112,6 +116,10 @@ namespace STAR
             SendStatus();
         }
 
+        /// <summary>
+        /// When a message arrived, update corresponding configuration
+        /// [internal use]
+        /// </summary>
         protected void MessageReceived(string s)
         {
             try

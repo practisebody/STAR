@@ -5,6 +5,14 @@ using System.Text;
 
 namespace LCY
 {
+    /// <summary>
+    /// A configuration class, singleton, only one copy, access by Instance.
+    /// A Dictionary of key-value pairs, each associated with callback function(s).
+    /// Whenever a value changes, the corresponding callback function(s) will be called
+    /// Keys are strings, while values can be any type
+    /// Callback function(s) can be zero or one parameter functions, can each key can
+    /// associate with more than one callback function
+    /// </summary>
     public sealed class Configurations : Singleton<Configurations>
     {
         private volatile Dictionary<string, object> Configs = new Dictionary<string, object>();
@@ -14,6 +22,9 @@ namespace LCY
 
         #region configs
 
+        /// <summary>
+        /// Returns true if contains a specific key
+        /// </summary>
         public bool Contains(string key)
         {
             return Configs.ContainsKey(key);
@@ -30,6 +41,9 @@ namespace LCY
                 del.DynamicInvoke(Get(key));
         }
 
+        /// <summary>
+        /// Sets the value corresponds to a key
+        /// </summary>
         public void Set(string key, object value)
         {
             if (Contains(key))
@@ -38,26 +52,42 @@ namespace LCY
                 Set(key, value, value?.GetType());
         }
 
+        /// <summary>
+        /// Sets the type of value corresponds to a key
+        /// </summary>
         public void SetType(string key, Type T)
         {
             Configs[key] = Convert.ChangeType(Configs[key], T);
         }
 
+        /// <summary>
+        /// Unset a key, remove its value and callbacks
+        /// </summary>
         public void Unset(string key)
         {
             Configs.Remove(key);
         }
 
+        /// <summary>
+        /// Returns the value corresponds to a key
+        /// </summary>
         public dynamic Get(string key)
         {
             return Configs[key];
         }
 
+        /// <summary>
+        /// Returns the value corresponds to a key, converts to type T
+        /// </summary>
         public T Get<T>(string key)
         {
             return (T)Convert.ChangeType(Configs[key], typeof(T));
         }
 
+        /// <summary>
+        /// Returns the value corresponds to a key if available
+        /// Otherwise return the default value
+        /// </summary>
         public dynamic Get(string key, dynamic def)
         {
             if (Contains(key))
@@ -66,12 +96,18 @@ namespace LCY
                 return def;
         }
 
+        /// <summary>
+        /// Returns or sets the value of a key
+        /// </summary>
         public dynamic this[string key]
         {
             get { return Get(key); }
             set { Set(key, value); }
         }
 
+        /// <summary>
+        /// Clears all the configurations (but not the callbacks)
+        /// </summary>
         public void Clear()
         {
             Configs.Clear();
@@ -81,29 +117,44 @@ namespace LCY
 
         #region callbacks
 
+        /// <summary>
+        /// Whether callbacks should be called now
+        /// </summary>
         public enum CallNow
         {
             YES,
             NO,
         };
 
+        /// <summary>
+        /// Whether callbacks should be run in main thread
+        /// </summary>
         public enum RunOnMainThead
         {
             YES,
             NO,
         };
 
+        /// <summary>
+        /// Whether app should wait until callbacks are done
+        /// </summary>
         public enum WaitUntilDone
         {
             YES,
             NO,
         };
 
+        /// <summary>
+        /// Set a key-value and add a callback
+        /// </summary>
         public void SetAndAddCallback(string key, object value, OnChangeHandler callback, RunOnMainThead runOnMainThread = RunOnMainThead.NO, WaitUntilDone waitUntilDone = WaitUntilDone.NO)
         {
             SetAndAddCallback(key, value, callback, CallNow.NO, runOnMainThread, waitUntilDone);
         }
 
+        /// <summary>
+        /// Set a key-value and add a callback
+        /// </summary>
         public void SetAndAddCallback(string key, object value, OnChangeHandler callback, CallNow callNow, RunOnMainThead runOnMainThread = RunOnMainThead.NO, WaitUntilDone waitUntilDone = WaitUntilDone.NO)
         {
             Set(key, value);
@@ -114,6 +165,9 @@ namespace LCY
             }
         }
 
+        /// <summary>
+        /// Add a callback to a key
+        /// </summary>
         public void AddCallback(string key, Handler callback, RunOnMainThead runOnMainThread = RunOnMainThead.NO, WaitUntilDone waitUntilDone = WaitUntilDone.NO)
         {
             if (Contains(key) == false)
@@ -129,6 +183,9 @@ namespace LCY
             }
         }
 
+        /// <summary>
+        /// Add a callback to a key
+        /// </summary>
         public void AddCallback(string key, OnChangeHandler callback, RunOnMainThead runOnMainThread = RunOnMainThead.NO, WaitUntilDone waitUntilDone = WaitUntilDone.NO)
         {
             if (Contains(key) == false)
@@ -144,6 +201,9 @@ namespace LCY
             }
         }
 
+        /// <summary>
+        /// Remove a callback to a key
+        /// </summary>
         public void RemoveCallback(string key, OnChangeHandler callback)
         {
             if (Events.ContainsKey(key))
@@ -152,6 +212,9 @@ namespace LCY
             }
         }
 
+        /// <summary>
+        /// Remove all the callbacks to a key
+        /// </summary>
         public void RemoveAllCallback(string key)
         {
             if (Events.ContainsKey(key))
@@ -160,11 +223,17 @@ namespace LCY
             }
         }
 
+        /// <summary>
+        /// Remove all the callbacks to all the keys
+        /// </summary>
         public void RemoveAllCallback()
         {
             Events.Clear();
         }
 
+        /// <summary>
+        /// Try to invoke the callback(s) to a key
+        /// </summary>
         public void TryInvoke(string key)
         {
             if (Contains(key))
@@ -177,6 +246,9 @@ namespace LCY
             }
         }
 
+        /// <summary>
+        /// Invoke callback(s) to a key
+        /// </summary>
         public void Invoke(string key)
         {
             Events[key].DynamicInvoke(Get(key));
@@ -186,11 +258,17 @@ namespace LCY
 
         #region utilites
 
+        /// <summary>
+        /// Convert to a string, listing all the configurations
+        /// </summary>
         override public string ToString()
         {
             return ToString(":");
         }
 
+        /// <summary>
+        /// Convert to a string, listing all the configurations
+        /// </summary>
         public string ToString(string sep, string endl = "")
         {
             Dictionary<string, object> temp = Configs;

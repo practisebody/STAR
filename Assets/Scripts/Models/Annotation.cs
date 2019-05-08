@@ -4,6 +4,9 @@ using UnityEngine;
 
 namespace STAR
 {
+    /// <summary>
+    /// Base class for an annotation
+    /// </summary>
     abstract public class Annotation
     {
         public enum AnnotationType
@@ -16,6 +19,9 @@ namespace STAR
         public AnnotationType Type { get; protected set; }
         public SE3 Matrix { get; protected set; }
 
+        /// <summary>
+        /// Constructor that construct from a json string
+        /// </summary>
         public Annotation(JSONNode node)
         {
             JSONNode pose = node["pose_information"];

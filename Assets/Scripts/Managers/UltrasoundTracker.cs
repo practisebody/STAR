@@ -9,6 +9,9 @@ using HoloPoseClient.Signalling;
 
 namespace STAR
 {
+    /// <summary>
+    /// Ultrasound controller tracker, also send controller pose to mentor
+    /// </summary>
     public class UltrasoundTracker : MonoBehaviour
     {
         public GameObject UltrasoundGizmo;

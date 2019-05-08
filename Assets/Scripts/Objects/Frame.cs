@@ -5,6 +5,9 @@ using UnityEngine;
 
 namespace STAR
 {
+    /// <summary>
+    /// A frame to highlight Hololens FOV, and also use color as the WebRTC status indicator
+    /// </summary>
     public class Frame : MonoBehaviour
     {
         protected Color Color
@@ -35,6 +38,9 @@ namespace STAR
 
         private void Update()
         {
+            // Red if not connected
+            // Yellow if connecting
+            // Green if conntected
             WebRTCConnection conn = ConnectionManager.Instance["WebRTC"] as WebRTCConnection;
             switch (conn.Status)
             {

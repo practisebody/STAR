@@ -6,6 +6,9 @@ using LCY;
 
 namespace STAR
 {
+    /// <summary>
+    /// Instantiate prefab objects
+    /// </summary>
     public class ObjectFactory : UnitySingleton<ObjectFactory>
     {
         private void Awake()

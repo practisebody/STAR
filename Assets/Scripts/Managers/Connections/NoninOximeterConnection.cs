@@ -14,6 +14,9 @@ using STAR.Nonin;
 
 namespace STAR
 {
+    /// <summary>
+    /// Connects to Nonin Oximter
+    /// </summary>
     public class NoninOximeterConnection : IConnection
     {
         public string Name => "Oximeter";

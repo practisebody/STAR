@@ -1,6 +1,6 @@
-﻿// Adopted from Nonin sample UWP code
+﻿// Copyright (C) Nonin Medical, Inc. All rights reserved.
+// Adopted from Nonin sample UWP code, modified by Chengyuan
 
-// Copyright (C) Nonin Medical, Inc. All rights reserved.
 using System;
 using System.Collections.Generic;
 using System.Linq;

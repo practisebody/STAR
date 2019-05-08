@@ -3,6 +3,9 @@ using UnityEngine.UI;
 
 namespace LCY
 {
+    /// <summary>
+    /// Unity VideoPreview object, that renders a RawImage using given texture data
+    /// </summary>
     public class VideoPreview : MonoBehaviour
     {
         protected RawImage RawImage;
