@@ -1,7 +1,5 @@
 ﻿using System;
-#if UNITY_2017
 using UnityEngine;
-#endif
 
 namespace LCY
 {
