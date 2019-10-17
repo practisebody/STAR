@@ -20,7 +20,7 @@ A PC and a HoloLens. Follow the instruction in <https://docs.microsoft.com/en-us
     1. Using Windows Device Portal to connect the PC to the HoloLens, either over Wi-Fi or over USB
 3. Upload to HoloLens. *Note: This part might be not accurate if Windows Device Portal updates.*
 	1. Using Windows Device Portal, click on "Views > Apps > Deploy apps"
-	2. Click on "Choose File", select the .appxbundle file in step 1
+	2. Click on "Choose File", select the .appxbundle file in step 1. *Note: Leave "I want to specify optional packages" and "I want to specify framework packages" unchecked*
 	3. Install
 
 ## Compling
